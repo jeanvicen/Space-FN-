@@ -1,0 +1,2903 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>SpaceFN</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0505">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+  html, body {
+    width:100%; height:100%; background:#0a0505; overflow:hidden;
+    font-family: 'Segoe UI', Arial, sans-serif; color:#fff;
+  }
+  #app { position:relative; width:100%; height:100%; max-width:720px; margin:0 auto; background:#0a0505; }
+  :root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+  }
+
+  .screen {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .4s ease;
+  }
+  .screen.active { opacity:1; pointer-events:auto; }
+
+  canvas#bgStars { position:absolute; inset:0; width:100%; height:100%; z-index:0; }
+
+  /* ---------- SPLASH ---------- */
+  #splashScreen .studio { font-size:15px; letter-spacing:4px; color:#888; opacity:0; animation: fadeInOut 2.2s ease forwards; }
+  #splashScreen .presents { font-size:12px; letter-spacing:2px; color:#555; margin-top:6px; opacity:0; animation: fadeInOut 2.2s ease forwards; animation-delay:.15s; }
+  #splashScreen .gamelogo { font-size:38px; font-weight:800; letter-spacing:6px; margin-top:18px; opacity:0; animation: fadeInOut 2.6s ease forwards; animation-delay:.5s; }
+  #splashScreen .gamelogo span:nth-child(1){color:#ff8c1a;}
+  #splashScreen .gamelogo span:nth-child(2){color:#ff8c1a;}
+  #splashScreen .gamelogo span:nth-child(3){color:#fff;}
+  #splashScreen .gamelogo span:nth-child(4){color:#e8342a;}
+  #splashScreen .gamelogo span:nth-child(5){color:#e8342a;}
+  #splashScreen .gamelogo span:nth-child(6){color:#f2c31a;}
+  #splashScreen .gamelogo span:nth-child(7){color:#e8342a;}
+  @keyframes fadeInOut {
+    0% { opacity:0; transform:translateY(8px); }
+    20% { opacity:1; transform:translateY(0); }
+    80% { opacity:1; }
+    100% { opacity:0; }
+  }
+
+  /* ---------- MENU ---------- */
+  #menuScreen { justify-content:flex-start; padding-top:calc(40px + var(--sat)); padding-bottom:calc(20px + var(--sab)); overflow-y:auto; }
+  .topbar { width:100%; height:6px; background:linear-gradient(90deg, transparent, #e8342a, transparent); opacity:.7; }
+  .logoWrap { position:relative; display:flex; flex-direction:column; align-items:center; margin-top:34px; z-index:2; }
+  .logoRing {
+    width:130px; height:130px; border-radius:30px; background:#0d0808;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 40px rgba(232,52,42,.45), inset 0 0 20px rgba(0,0,0,.6);
+    position:relative;
+  }
+  .logoRing canvas { width:100%; height:100%; }
+  .gameTitle { font-size:42px; font-weight:800; letter-spacing:6px; margin-top:22px; }
+  .gameTitle span:nth-child(1){color:#ff8c1a;}
+  .gameTitle span:nth-child(2){color:#ff8c1a;}
+  .gameTitle span:nth-child(3){color:#fff;}
+  .gameTitle span:nth-child(4){color:#e8342a;}
+  .gameTitle span:nth-child(5){color:#e8342a;}
+  .gameTitle span:nth-child(6){color:#f2c31a;}
+  .gameTitle span:nth-child(7){color:#e8342a;}
+  .earlyAccess { font-size:12px; letter-spacing:5px; color:#8a6a4a; margin-top:8px; }
+  .divider { width:120px; height:1px; background:linear-gradient(90deg, transparent, #888, transparent); margin:26px 0; opacity:.4; }
+
+  .menuBtns { width:88%; max-width:420px; display:flex; flex-direction:column; gap:16px; z-index:2; }
+  .menuBtn {
+    position:relative; display:flex; align-items:center; justify-content:center;
+    background:#130d0d; border:1px solid #2a1f1f; border-radius:14px;
+    padding:20px; font-size:16px; font-weight:700; letter-spacing:3px;
+    cursor:pointer; overflow:hidden; transition:transform .1s, box-shadow .2s;
+  }
+  .menuBtn:active { transform:scale(.98); }
+  .menuBtn::before {
+    content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+  }
+  .menuBtn.red { color:#e8342a; } .menuBtn.red::before { background:#e8342a; box-shadow:0 0 10px #e8342a; }
+  .menuBtn.white { color:#fff; } .menuBtn.white::before { background:#fff; box-shadow:0 0 10px #fff; }
+  .menuBtn.blue { color:#fff; } .menuBtn.blue::before { background:#22c5e8; box-shadow:0 0 10px #22c5e8; }
+  .menuBtn.mais { color:#22c5e8; border-color:#1a5a66; box-shadow:0 0 14px rgba(34,197,232,.15); }
+  .menuBtn.mais::before { background:#22c5e8; box-shadow:0 0 10px #22c5e8; }
+
+  .statsBar { display:flex; align-items:center; gap:16px; margin-top:34px; z-index:2; font-size:16px; font-weight:600; }
+  .statsBar .stat { display:flex; align-items:center; gap:8px; }
+  .statsBar .sep { width:1px; height:20px; background:#333; }
+  .coinVal { color:#f2c31a; }
+  .gemVal { color:#b98cf2; }
+  .verTag { position:absolute; bottom:calc(14px + var(--sab)); right:calc(16px + var(--sar)); font-size:11px; color:#4a3a3a; z-index:2; }
+
+  /* ---------- LOJA ---------- */
+  #lojaScreen { justify-content:flex-start; padding-top:calc(16px + var(--sat)); padding-bottom:calc(16px + var(--sab)); }
+  .lojaHeader { width:100%; display:flex; align-items:center; justify-content:space-between; padding:0 18px; z-index:2; }
+  .backBtn {
+    width:38px; height:38px; border-radius:10px; background:rgba(15,10,10,.7);
+    border:1px solid #2a1f1f; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .lojaTitle { font-size:16px; letter-spacing:3px; font-weight:800; color:#fff; }
+  .lojaCurrency { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; background:rgba(15,10,10,.7); border:1px solid #2a1f1f; border-radius:10px; padding:7px 12px; }
+  .lojaTabs { display:flex; gap:10px; width:100%; padding:16px 18px 6px; z-index:2; }
+  .lojaTab {
+    flex:1; text-align:center; padding:12px 8px; border-radius:12px; border:1px solid #2a1f1f;
+    background:#130d0d; font-size:12px; font-weight:700; letter-spacing:1.5px; color:#8a7a7a; cursor:pointer;
+    transition:all .2s;
+  }
+  .lojaTab.active { color:#fff; border-color:#e8342a; box-shadow:0 0 12px rgba(232,52,42,.25); background:#1a1010; }
+  .lojaBody { width:100%; flex:1; overflow-y:auto; padding:10px 18px 20px; z-index:2; }
+  .shipGrid { display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; }
+  .shipCard {
+    background:#120c0c; border:1px solid #2a1f1f; border-radius:14px; padding:12px;
+    display:flex; flex-direction:column; align-items:center; gap:6px; position:relative;
+  }
+  .shipCard.equipped { border-color:#2ecc71; box-shadow:0 0 14px rgba(46,204,113,.25); }
+  .shipCardCanvas { width:100%; height:82px; }
+  .shipCardName { font-size:11.5px; font-weight:800; letter-spacing:1px; color:#fff; text-align:center; }
+  .shipCardDesc { font-size:9.5px; color:#8a7a7a; text-align:center; line-height:1.4; min-height:26px; }
+  .shipCardBtn {
+    width:100%; margin-top:4px; padding:9px 4px; border-radius:9px; border:none;
+    font-size:11px; font-weight:800; letter-spacing:1px; cursor:pointer;
+  }
+  .shipCardBtn.buy { background:linear-gradient(90deg,#e8342a,#ff8c1a); color:#fff; }
+  .shipCardBtn.equip { background:#1a2a1a; color:#2ecc71; border:1px solid #2ecc7155; }
+  .shipCardBtn.equipped { background:transparent; color:#2ecc71; border:1px solid #2ecc71; cursor:default; }
+  .shipCardBadge {
+    position:absolute; top:8px; right:8px; font-size:8.5px; background:#2a1f1f; color:#8a7a7a;
+    padding:3px 7px; border-radius:6px; letter-spacing:.5px;
+  }
+
+  /* lendária */
+  .legendaryWrap { display:flex; flex-direction:column; align-items:center; gap:14px; padding:10px 4px; }
+  .legendaryTimer { font-size:11px; letter-spacing:2px; color:#b98cf2; background:rgba(185,140,242,.08); border:1px solid rgba(185,140,242,.3); padding:8px 16px; border-radius:10px; }
+  .legendaryCard {
+    width:100%; max-width:280px; background:linear-gradient(180deg, #1a1024, #120c0c);
+    border:1px solid #6a3a9a; border-radius:18px; padding:22px; text-align:center;
+    box-shadow:0 0 30px rgba(185,140,242,.2);
+  }
+  .legendaryCard canvas { width:140px; height:140px; margin:0 auto; }
+  .legendaryName { font-size:16px; font-weight:800; letter-spacing:2px; color:#b98cf2; margin-top:8px; }
+  .legendaryDesc { font-size:11px; color:#a08cc0; margin-top:6px; line-height:1.5; }
+  .legendaryPrice { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px; font-size:15px; font-weight:800; color:#b98cf2; }
+  .legendaryBuyBtn {
+    width:100%; margin-top:14px; padding:14px; border-radius:12px; border:none;
+    background:linear-gradient(90deg,#6a3a9a,#b98cf2); color:#fff; font-weight:800;
+    letter-spacing:2px; font-size:13px; cursor:pointer;
+  }
+  .legendaryBuyBtn:disabled { opacity:.5; cursor:default; }
+  .legendaryBuyBtn.owned { background:transparent; border:1px solid #2ecc71; color:#2ecc71; }
+
+  /* ---------- EVENTOS (MAIS) ---------- */
+  #eventosScreen { justify-content:flex-start; padding-top:calc(16px + var(--sat)); padding-bottom:calc(16px + var(--sab)); }
+  .eventosBody { width:100%; flex:1; overflow-y:auto; padding:14px 18px 24px; z-index:2; display:flex; flex-direction:column; gap:18px; }
+  .eventCard { background:#120c0c; border:1px solid #2a1f1f; border-radius:16px; padding:18px; }
+  .eventCardTitle { font-size:13px; font-weight:800; letter-spacing:2px; color:#fff; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+
+  /* código */
+  .codeInputRow { display:flex; gap:8px; }
+  .codeInput {
+    flex:1; background:#150e0e; border:2px solid #3a2a2a; border-radius:10px;
+    padding:12px 14px; font-size:14px; color:#fff; letter-spacing:1px; outline:none; text-transform:uppercase;
+  }
+  .codeBtn {
+    padding:12px 18px; border-radius:10px; border:none; background:linear-gradient(90deg,#e8342a,#ff8c1a);
+    color:#fff; font-weight:800; font-size:12px; letter-spacing:1px; cursor:pointer;
+  }
+
+  /* prêmio diário */
+  .dailyGrid { display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; }
+  .dailyCell {
+    aspect-ratio:1; background:#180f0f; border:1px solid #2a1f1f; border-radius:8px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:8.5px; gap:2px; position:relative;
+  }
+  .dailyCell.done { border-color:#2ecc71; background:#0f1a10; }
+  .dailyCell.today { border-color:#f2c31a; box-shadow:0 0 10px rgba(242,195,26,.35); }
+  .dailyCell .dNum { font-size:7px; color:#665; position:absolute; top:3px; left:4px; }
+  .dailyClaimBtn {
+    width:100%; margin-top:12px; padding:13px; border-radius:10px; border:none;
+    background:linear-gradient(90deg,#f2c31a,#ff8c1a); color:#1a1000; font-weight:800; letter-spacing:1.5px; font-size:12px; cursor:pointer;
+  }
+  .dailyClaimBtn:disabled { background:#2a1f1f; color:#665; cursor:default; }
+
+  /* roleta */
+  .rouletteWrap { display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .rouletteOuter { position:relative; width:230px; height:230px; }
+  .rouletteWheel { width:100%; height:100%; border-radius:50%; position:relative; transition:transform 4s cubic-bezier(.17,.67,.16,1); }
+  .roulettePointer {
+    position:absolute; top:-6px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent;
+    border-top:18px solid #f2c31a; z-index:3; filter:drop-shadow(0 0 4px rgba(242,195,26,.6));
+  }
+  .rouletteSpins { font-size:11px; color:#8a7a7a; letter-spacing:1px; }
+  .rouletteSpinBtn {
+    width:100%; padding:14px; border-radius:12px; border:none; margin-top:4px;
+    background:linear-gradient(90deg,#22c5e8,#b98cf2); color:#fff; font-weight:800; letter-spacing:2px; font-size:13px; cursor:pointer;
+  }
+  .rouletteSpinBtn:disabled { background:#2a1f1f; color:#665; cursor:default; }
+
+  /* ---------- INVENTÁRIO ---------- */
+  #invScreen { justify-content:flex-start; padding-top:calc(16px + var(--sat)); padding-bottom:calc(16px + var(--sab)); }
+  .invBody { width:100%; flex:1; overflow-y:auto; padding:14px 18px 24px; z-index:2; }
+  .invFilterRow { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; padding-bottom:2px; }
+  .invFilterChip {
+    flex:0 0 auto; padding:8px 14px; border-radius:20px; border:1px solid #2a1f1f; background:#130d0d;
+    font-size:10.5px; font-weight:700; letter-spacing:.5px; color:#8a7a7a; cursor:pointer; white-space:nowrap;
+  }
+  .invFilterChip.active { color:#fff; border-color:#fff; }
+  .invGrid { display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; }
+  .invCard {
+    border-radius:14px; padding:12px; display:flex; flex-direction:column; align-items:center; gap:6px;
+    position:relative; border:1.5px solid; background:#120c0c;
+  }
+  .invCard canvas { width:100%; height:78px; }
+  .invCard .invName { font-size:11px; font-weight:800; letter-spacing:.5px; color:#fff; text-align:center; }
+  .invCard .invRarityTag {
+    font-size:8.5px; font-weight:800; letter-spacing:1px; padding:3px 9px; border-radius:8px; margin-top:2px;
+  }
+  .invEmpty { text-align:center; color:#665; font-size:12px; padding:60px 20px; line-height:1.6; }
+
+  /* cores de raridade (usadas em Inventário e badges da Loja) */
+  .r-comum   { border-color:#5a5a5a; } .r-comum   .invRarityTag { background:#2a2a2a; color:#aaa; }
+  .r-raro    { border-color:#2ecc71; } .r-raro    .invRarityTag { background:#0f2a16; color:#2ecc71; }
+  .r-epico   { border-color:#22c5e8; } .r-epico   .invRarityTag { background:#0d2530; color:#22c5e8; }
+  .r-lendario{ border-color:#f2c31a; } .r-lendario .invRarityTag { background:#2a2410; color:#f2c31a; }
+  .r-galaxia { border-color:#b98cf2; box-shadow:0 0 16px rgba(185,140,242,.35); }
+  .r-galaxia .invRarityTag { background:#2a1a3a; color:#e0c0ff; }
+
+  /* ---------- CONFIG ---------- */
+  #configScreen { justify-content:flex-start; padding-top:calc(16px + var(--sat)); padding-bottom:calc(16px + var(--sab)); }
+  .configBody { width:100%; flex:1; overflow-y:auto; padding:14px 18px 24px; z-index:2; display:flex; flex-direction:column; gap:16px; }
+  .configCard { background:#120c0c; border:1px solid #2a1f1f; border-radius:16px; padding:18px; }
+  .configCardTitle { font-size:12px; font-weight:800; letter-spacing:2px; color:#8a7a7a; margin-bottom:12px; }
+  .configNameRow { display:flex; gap:8px; }
+  .configNameInput {
+    flex:1; background:#150e0e; border:2px solid #3a2a2a; border-radius:10px;
+    padding:11px 14px; font-size:14px; color:#fff; outline:none;
+  }
+  .configSaveBtn { padding:11px 16px; border-radius:10px; border:none; background:linear-gradient(90deg,#e8342a,#ff8c1a); color:#fff; font-weight:800; font-size:11px; cursor:pointer; }
+  .configCreditRow { display:flex; justify-content:space-between; align-items:center; padding:10px 0; font-size:13px; color:#ccc; border-bottom:1px solid #1e1616; }
+  .configCreditRow:last-child { border-bottom:none; }
+  .configCreditRow b { color:#fff; }
+  .configCreditRow a { color:#22c5e8; text-decoration:none; }
+
+  /* mensagem global (banner + modal) */
+  #globalMsgBanner {
+    position:fixed; inset:0; background:rgba(5,3,3,.88); z-index:200; display:none;
+    align-items:center; justify-content:center; padding:24px;
+  }
+  #globalMsgBanner.show { display:flex; }
+  .globalMsgBox { background:#150e0e; border:1px solid #e8342a55; border-radius:18px; padding:26px; max-width:340px; text-align:center; box-shadow:0 0 40px rgba(232,52,42,.2); }
+  .globalMsgBox .gmTitle { font-size:14px; font-weight:800; letter-spacing:1.5px; color:#ff8c1a; margin-bottom:10px; }
+  .globalMsgBox .gmText { font-size:12.5px; color:#ccc; line-height:1.6; margin-bottom:18px; }
+  .globalMsgBox button { width:100%; padding:12px; border:none; border-radius:10px; background:linear-gradient(90deg,#e8342a,#ff8c1a); color:#fff; font-weight:800; letter-spacing:1px; cursor:pointer; }
+
+  /* ---------- BANNER INSTALAR APP (PWA) ---------- */
+  #installBanner {
+    position:fixed; left:12px; right:12px; bottom:calc(14px + var(--sab));
+    max-width:420px; margin:0 auto; background:#150e0e; border:1px solid #2a1f1f;
+    border-radius:16px; padding:14px 16px; display:none; align-items:center; gap:12px;
+    z-index:150; box-shadow:0 8px 30px rgba(0,0,0,.5);
+  }
+  #installBanner.show { display:flex; }
+  #installBanner img { width:42px; height:42px; border-radius:10px; flex-shrink:0; }
+  #installBanner .installTxt { flex:1; }
+  #installBanner .installTxt b { font-size:12.5px; color:#fff; display:block; }
+  #installBanner .installTxt span { font-size:10.5px; color:#8a7a7a; }
+  #installBanner button { border:none; border-radius:9px; padding:9px 14px; font-size:11px; font-weight:800; cursor:pointer; }
+  #installBannerYes { background:linear-gradient(90deg,#e8342a,#ff8c1a); color:#fff; }
+  #installBannerNo { background:transparent; color:#665; padding:9px 8px; }
+
+  /* ---------- MODAL: MODO DE JOGO ---------- */
+  .modalOverlay {
+    position:absolute; inset:0; background:rgba(5,2,2,.75); backdrop-filter:blur(3px);
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .25s; z-index:50;
+  }
+  .modalOverlay.active { opacity:1; pointer-events:auto; }
+  .modalBox {
+    width:86%; max-width:420px; background:#120c0c; border:1px solid #2a1f1f;
+    border-radius:18px; padding:26px 22px; box-shadow:0 0 40px rgba(0,0,0,.6);
+  }
+  .modalBox h3 { font-size:18px; letter-spacing:3px; color:#fff; text-align:center; margin-bottom:22px; }
+  .modeOpt {
+    display:flex; align-items:center; justify-content:space-between;
+    background:#180f0f; border:1px solid #2a1f1f; border-radius:12px;
+    padding:16px 18px; margin-bottom:14px; cursor:pointer; transition:border-color .2s, transform .1s;
+  }
+  .modeOpt:active { transform:scale(.98); }
+  .modeOpt.locked { opacity:.5; cursor:default; }
+  .modeOpt .modeName { font-size:14px; font-weight:700; letter-spacing:1.5px; color:#fff; }
+  .modeOpt .modeDesc { font-size:11px; color:#8a7a7a; margin-top:4px; letter-spacing:.3px; }
+  .modeOpt.classic { border-color:#e8342a55; }
+  .modeOpt.classic .modeName { color:#e8342a; }
+  .modeBadge { font-size:9px; background:#2a1f1f; color:#8a7a7a; padding:4px 8px; border-radius:6px; letter-spacing:1px; white-space:nowrap; }
+  .closeModalBtn {
+    width:100%; margin-top:8px; padding:14px; border-radius:12px; border:1px solid #3a2a2a;
+    background:transparent; color:#8a7a7a; font-size:13px; letter-spacing:2px; cursor:pointer;
+  }
+
+  /* ---------- GAME ---------- */
+  #gameScreen { background:#000; padding-bottom:var(--sab); }
+  #gameCanvas { display:block; width:100%; height:100%; touch-action:none; }
+  .hud { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:flex-start; padding:calc(16px + var(--sat)) calc(16px + var(--sar)) 16px calc(16px + var(--sal)); z-index:5; pointer-events:none; }
+  .hudLeft, .hudRight { display:flex; flex-direction:column; gap:6px; }
+  .hudPill { pointer-events:auto; background:rgba(15,10,10,.7); border:1px solid #2a1f1f; border-radius:10px; padding:8px 14px; font-size:13px; font-weight:700; letter-spacing:1px; }
+  .hudLevel { color:#22c5e8; }
+  .hudScore { color:#f2c31a; }
+  .hudRes { pointer-events:auto; display:flex; align-items:center; gap:10px; background:rgba(15,10,10,.7); border:1px solid #2a1f1f; border-radius:10px; padding:5px 10px; font-size:11px; font-weight:700; }
+  .hudRes .res { display:flex; align-items:center; gap:4px; }
+  .hudRes .res.coin { color:#f2c31a; }
+  .hudRes .res.gem { color:#b98cf2; }
+  .hudRes .resIcon { width:14px; height:14px; flex-shrink:0; }
+  .pauseBtn { pointer-events:auto; width:38px; height:38px; border-radius:10px; background:rgba(15,10,10,.7); border:1px solid #2a1f1f; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .hpBarWrap { display:flex; flex-direction:column; gap:3px; padding:6px 12px 2px; width:120px; }
+  .hpBarLabel { font-size:9px; letter-spacing:1.5px; color:#7a5a5a; display:flex; justify-content:space-between; }
+  .hpBarLabel span:last-child { color:#e8342a; font-weight:700; }
+  .hpBarBg { width:100%; height:10px; background:#1a1010; border:1px solid #3a1515; border-radius:5px; overflow:hidden; }
+  .hpBarFill { height:100%; background:linear-gradient(90deg,#e8342a,#ff5a3a); width:100%; transition:width .18s ease, background .3s ease; }
+  .hpBarFill.mid { background:linear-gradient(90deg,#e8a01a,#ffb84a); }
+  .hpBarFill.low { background:linear-gradient(90deg,#e83a3a,#ff2a2a); animation:hpPulse .6s ease-in-out infinite; }
+  @keyframes hpPulse { 0%,100%{opacity:1;} 50%{opacity:.55;} }
+  .bossBarWrap { position:absolute; top:calc(70px + var(--sat)); left:50%; transform:translateX(-50%); width:80%; max-width:420px; z-index:5; display:none; }
+  .bossBarWrap.show { display:block; }
+  .bossName { text-align:center; font-size:12px; letter-spacing:3px; color:#e8342a; margin-bottom:4px; text-shadow:0 0 8px rgba(232,52,42,.6); }
+  .bossBarBg { width:100%; height:14px; background:#1a1010; border:1px solid #3a1515; border-radius:7px; overflow:hidden; }
+  .bossBarFill { height:100%; background:linear-gradient(90deg,#e8342a,#ff5a3a); width:100%; transition:width .2s; }
+
+  /* ---------- PAUSE / GAMEOVER MODALS ---------- */
+  .gmodal { position:absolute; inset:0; background:rgba(5,2,2,.82); display:none; align-items:center; justify-content:center; z-index:60; }
+  .gmodal.show { display:flex; }
+  .gmodalBox { width:82%; max-width:380px; background:#120c0c; border:1px solid #2a1f1f; border-radius:18px; padding:28px 22px; text-align:center; }
+  .gmodalBox h3 { font-size:20px; letter-spacing:2px; margin-bottom:18px; }
+  .gmBtn { width:100%; padding:14px; border-radius:12px; border:none; font-size:14px; font-weight:700; letter-spacing:1.5px; margin-top:12px; cursor:pointer; }
+  .gmBtn.primary { background:linear-gradient(90deg,#e8342a,#ff8c1a); color:#fff; }
+  .gmBtn.secondary { background:#1a1212; border:1px solid #3a2a2a; color:#ccc; }
+  .gmBtn.revive { background:linear-gradient(90deg,#f2c31a,#ff8c1a); color:#1a0f00; }
+  .gmBtn:active { transform:scale(.97); }
+  .gmodalBox .stat-line { font-size:13px; color:#aaa; margin:6px 0; letter-spacing:.5px; }
+  .gmodalBox .stat-line b { color:#f2c31a; }
+
+  .toast {
+    position:absolute; bottom:30px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:rgba(15,10,10,.92); border:1px solid #2a1f1f; padding:10px 20px; border-radius:10px;
+    font-size:12px; letter-spacing:1px; opacity:0; transition:all .3s; z-index:80; pointer-events:none;
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<!-- ADMIN.JS carrega ANTES do jogo — é ele que define ADMIN_CONFIG,
+     usado pela Loja, Eventos, Roleta e Prêmio Diário. Edite admin.js,
+     não este arquivo, pra mudar códigos/preços/mensagens. -->
+<script src="admin.js"></script>
+<div id="app">
+  <canvas id="bgStars"></canvas>
+
+  <!-- SPLASH -->
+  <div class="screen active" id="splashScreen">
+    <div class="studio">KLIPZA STUDIO</div>
+    <div class="presents">APRESENTA</div>
+    <div class="gamelogo"><span>S</span><span>P</span><span>A</span><span>C</span><span>E</span><span>F</span><span>N</span></div>
+  </div>
+
+  <!-- MENU -->
+  <div class="screen" id="menuScreen">
+    <div class="topbar"></div>
+    <div class="logoWrap">
+      <div class="logoRing"><canvas id="logoCanvas" width="130" height="130"></canvas></div>
+      <div class="gameTitle"><span>S</span><span>P</span><span>A</span><span>C</span><span>E</span><span>F</span><span>N</span></div>
+      <div class="earlyAccess">◇ EARLY ACCESS ◇</div>
+    </div>
+    <div class="divider"></div>
+    <div class="menuBtns">
+      <div class="menuBtn red" id="btnModo">MODO DE JOGO</div>
+      <div class="menuBtn white" id="btnLoja">LOJA</div>
+      <div class="menuBtn blue" id="btnInv">INVENTARIO</div>
+      <div class="menuBtn blue" id="btnConfig">CONFIG</div>
+      <div class="menuBtn mais" id="btnMais">MAIS</div>
+    </div>
+    <div class="statsBar">
+      <div class="stat"><canvas id="coinIcon" width="22" height="22"></canvas><span class="coinVal" id="coinVal">0</span></div>
+      <div class="sep"></div>
+      <div class="stat"><canvas id="gemIcon" width="20" height="20"></canvas><span class="gemVal" id="gemVal">0</span></div>
+    </div>
+  </div>
+
+  <!-- LOJA -->
+  <div class="screen" id="lojaScreen">
+    <div class="lojaHeader">
+      <div class="backBtn" id="lojaBackBtn">‹</div>
+      <div class="lojaTitle">LOJA</div>
+      <div class="lojaCurrency">
+        <span style="color:#f2c31a" id="lojaCoinVal">0</span>
+        <span style="color:#b98cf2" id="lojaGemVal">0</span>
+      </div>
+    </div>
+    <div class="lojaTabs">
+      <div class="lojaTab active" id="tabNaves">NAVES</div>
+      <div class="lojaTab" id="tabLendaria">LENDÁRIA</div>
+    </div>
+    <div class="lojaBody">
+      <div id="lojaPanelNaves" class="shipGrid"></div>
+      <div id="lojaPanelLendaria" class="legendaryWrap" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- EVENTOS (MAIS) -->
+  <div class="screen" id="eventosScreen">
+    <div class="lojaHeader">
+      <div class="backBtn" id="eventosBackBtn">‹</div>
+      <div class="lojaTitle">EVENTOS</div>
+      <div class="lojaCurrency">
+        <span style="color:#f2c31a" id="eventosCoinVal">0</span>
+        <span style="color:#b98cf2" id="eventosGemVal">0</span>
+      </div>
+    </div>
+    <div class="eventosBody">
+
+      <div class="eventCard">
+        <div class="eventCardTitle">🎁 PRÊMIO DIÁRIO</div>
+        <div class="dailyGrid" id="dailyGrid"></div>
+        <button class="dailyClaimBtn" id="dailyClaimBtn">RESGATAR</button>
+      </div>
+
+      <div class="eventCard">
+        <div class="eventCardTitle">🎡 ROLETA DA SORTE</div>
+        <div class="rouletteWrap">
+          <div class="rouletteOuter">
+            <div class="roulettePointer"></div>
+            <canvas class="rouletteWheel" id="rouletteCanvas" width="230" height="230"></canvas>
+          </div>
+          <div class="rouletteSpins" id="rouletteSpinsLeft">3 giros restantes hoje</div>
+          <button class="rouletteSpinBtn" id="rouletteSpinBtn">GIRAR</button>
+        </div>
+      </div>
+
+      <div class="eventCard">
+        <div class="eventCardTitle">🏷️ CÓDIGO DE RESGATE</div>
+        <div class="codeInputRow">
+          <input type="text" class="codeInput" id="codeInput" maxlength="20" placeholder="DIGITE O CÓDIGO">
+          <button class="codeBtn" id="codeBtnResgatar">RESGATAR</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INVENTARIO -->
+  <div class="screen" id="invScreen">
+    <div class="lojaHeader">
+      <div class="backBtn" id="invBackBtn">‹</div>
+      <div class="lojaTitle">INVENTÁRIO</div>
+      <div class="lojaCurrency">
+        <span id="invCountVal">0/14</span>
+      </div>
+    </div>
+    <div class="invBody">
+      <div class="invFilterRow" id="invFilterRow">
+        <div class="invFilterChip active" data-r="todos">TODOS</div>
+        <div class="invFilterChip" data-r="comum">COMUM</div>
+        <div class="invFilterChip" data-r="raro">RARO</div>
+        <div class="invFilterChip" data-r="epico">ÉPICO</div>
+        <div class="invFilterChip" data-r="lendario">LENDÁRIO</div>
+        <div class="invFilterChip" data-r="galaxia">GALÁXIA</div>
+      </div>
+      <div class="invGrid" id="invGrid"></div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="screen" id="configScreen">
+    <div class="lojaHeader">
+      <div class="backBtn" id="configBackBtn">‹</div>
+      <div class="lojaTitle">CONFIGURAÇÕES</div>
+      <div style="width:38px;"></div>
+    </div>
+    <div class="configBody">
+      <div class="configCard">
+        <div class="configCardTitle">NOME DO PILOTO</div>
+        <div class="configNameRow">
+          <input type="text" class="configNameInput" id="configNameInput" maxlength="16">
+          <button class="configSaveBtn" id="configNameSaveBtn">SALVAR</button>
+        </div>
+      </div>
+      <div class="configCard">
+        <div class="configCardTitle">CRÉDITOS</div>
+        <div class="configCreditRow"><span>Estúdio</span><b id="creditEstudio">—</b></div>
+        <div class="configCreditRow"><span>Instagram</span><a id="creditInstagram" href="#" target="_blank">—</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANNER DE MENSAGEM GLOBAL (aparece sobre qualquer tela) -->
+  <div id="globalMsgBanner">
+    <div class="globalMsgBox">
+      <div class="gmTitle" id="globalMsgTitle"></div>
+      <div class="gmText" id="globalMsgText"></div>
+      <button id="globalMsgCloseBtn">ENTENDI</button>
+    </div>
+  </div>
+
+  <!-- BANNER INSTALAR APP -->
+  <div id="installBanner">
+    <img src="icon-192.png" alt="SpaceFN">
+    <div class="installTxt">
+      <b>Instalar SpaceFN</b>
+      <span>Jogue como app, direto da tela inicial</span>
+    </div>
+    <button id="installBannerNo">Agora não</button>
+    <button id="installBannerYes">Instalar</button>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="gameScreen">
+    <canvas id="gameCanvas"></canvas>
+    <div class="hud">
+      <div class="hudLeft">
+        <div class="hudPill hudLevel" id="hudLevel">NÍVEL 1</div>
+        <div class="hudPill hudScore" id="hudScore">0</div>
+        <div class="hudRes">
+          <div class="res coin"><canvas class="resIcon" id="hudCoinIcon" width="14" height="14"></canvas><span id="hudCoins">0</span></div>
+          <div class="res gem"><canvas class="resIcon" id="hudGemIcon" width="14" height="14"></canvas><span id="hudGems">0</span></div>
+        </div>
+        <div class="hpBarWrap">
+          <div class="hpBarLabel"><span>VIDA</span><span id="hpBarText">100</span></div>
+          <div class="hpBarBg"><div class="hpBarFill" id="hpBarFill"></div></div>
+        </div>
+      </div>
+      <div class="pauseBtn" id="pauseBtn">
+        <canvas id="pauseIcon" width="16" height="16"></canvas>
+      </div>
+    </div>
+    <div class="bossBarWrap" id="bossBarWrap">
+      <div class="bossName" id="bossName">BOSS</div>
+      <div class="bossBarBg"><div class="bossBarFill" id="bossBarFill"></div></div>
+    </div>
+
+    <!-- PAUSE MODAL -->
+    <div class="gmodal" id="pauseModal">
+      <div class="gmodalBox">
+        <h3>PAUSADO</h3>
+        <div class="stat-line">Progresso salvo automaticamente</div>
+        <button class="gmBtn primary" id="resumeBtn">CONTINUAR</button>
+        <button class="gmBtn secondary" id="exitToMenuBtn">SAIR PARA O MENU</button>
+      </div>
+    </div>
+
+    <!-- GAME OVER / REVIVE MODAL -->
+    <div class="gmodal" id="deathModal">
+      <div class="gmodalBox">
+        <h3 id="deathTitle">VOCÊ MORREU</h3>
+        <div class="stat-line">Nível: <b id="deathLevel">1</b></div>
+        <div class="stat-line">Pontuação: <b id="deathScore">0</b></div>
+        <button class="gmBtn revive" id="reviveCoinBtn">CONTINUAR — <span id="reviveCoinCost">50</span> MOEDAS</button>
+        <button class="gmBtn revive" id="reviveGemBtn">CONTINUAR — <span id="reviveGemCost">10</span> DIAMANTES</button>
+        <button class="gmBtn secondary" id="giveUpBtn">DESISTIR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MODO DE JOGO -->
+  <div class="modalOverlay" id="modeModal">
+    <div class="modalBox">
+      <h3>MODO DE JOGO</h3>
+      <div class="modeOpt classic" id="modeClassic">
+        <div>
+          <div class="modeName" id="modeClassicTitle">MODO CLÁSSICO</div>
+          <div class="modeDesc" id="modeClassicDesc">Sobreviva às ondas e derrote os chefes</div>
+        </div>
+      </div>
+      <div class="modeOpt locked">
+        <div>
+          <div class="modeName" style="color:#8a7a7a">MODO PVP</div>
+          <div class="modeDesc">Enfrente outros jogadores</div>
+        </div>
+        <div class="modeBadge">EM DEV</div>
+      </div>
+      <div class="modeOpt locked">
+        <div>
+          <div class="modeName" style="color:#8a7a7a">MISSÃO EM DUPLA</div>
+          <div class="modeDesc">Jogue com um amigo, mesma missão</div>
+        </div>
+        <div class="modeBadge">EM DEV</div>
+      </div>
+      <button class="closeModalBtn" id="closeModeModal">FECHAR</button>
+    </div>
+  </div>
+
+  <!-- MODAL: EM BREVE (loja, inventario, config, mais) -->
+  <div class="modalOverlay" id="soonModal">
+    <div class="modalBox" style="text-align:center;">
+      <h3 id="soonTitle">EM BREVE</h3>
+      <p style="color:#8a7a7a; font-size:12px; letter-spacing:.5px; margin-bottom:20px;">Esta seção ainda está em desenvolvimento.</p>
+      <button class="closeModalBtn" id="closeSoonModal">FECHAR</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+<script>
+/* ============================================================
+   SPACEFN — Klipza Studio
+   ============================================================ */
+
+/* ---------- AUDIO ENGINE (sintetizado via WebAudio, sem arquivos externos) ---------- */
+const SFX = (() => {
+  let actx = null;
+  function ctx() {
+    if (!actx) {
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+    }
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  function unlock() { ctx(); }
+  ['pointerdown', 'touchstart', 'click'].forEach(ev => window.addEventListener(ev, unlock, { once: true, passive: true }));
+
+  function tone(freq, dur, type, vol, opts = {}) {
+    const c = ctx();
+    if (!c) return;
+    const t0 = c.currentTime;
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = type || 'square';
+    osc.frequency.setValueAtTime(freq, t0);
+    if (opts.slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(1, opts.slideTo), t0 + dur);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain).connect(c.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  }
+
+  function noiseBurst(dur, vol, filterFreq) {
+    const c = ctx();
+    if (!c) return;
+    const t0 = c.currentTime;
+    const bufferSize = c.sampleRate * dur;
+    const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    const src = c.createBufferSource();
+    src.buffer = buffer;
+    const filter = c.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(filterFreq || 2000, t0);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(vol, t0);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(filter).connect(gain).connect(c.destination);
+    src.start(t0);
+  }
+
+  return {
+    shoot() { tone(880, 0.07, 'square', 0.06, { slideTo: 420 }); },
+    hit() { tone(140, 0.15, 'sawtooth', 0.12, { slideTo: 60 }); noiseBurst(0.1, 0.08, 900); },
+    explosion() { noiseBurst(0.35, 0.22, 1400); tone(90, 0.3, 'sawtooth', 0.1, { slideTo: 30 }); },
+    coin(stack) {
+      // pitch sobe levemente conforme o combo de coleta aumenta, sem virar bagunça de tons
+      const base = 1100 + Math.min(stack, 6) * 60;
+      tone(base, 0.09, 'sine', 0.09, { slideTo: base * 1.6 });
+    },
+    gem() { tone(1500, 0.05, 'sine', 0.08, { slideTo: 2200 }); setTimeout(() => tone(1900, 0.08, 'sine', 0.07, { slideTo: 2600 }), 40); },
+    powerup() { tone(600, 0.1, 'triangle', 0.09, { slideTo: 1200 }); setTimeout(() => tone(900, 0.12, 'triangle', 0.09, { slideTo: 1500 }), 60); },
+    bossHit() { tone(200, 0.08, 'square', 0.08, { slideTo: 100 }); },
+    levelUp() { tone(500, 0.12, 'triangle', 0.1, { slideTo: 900 }); setTimeout(() => tone(700, 0.15, 'triangle', 0.1, { slideTo: 1100 }), 90); },
+    gameOver() { tone(300, 0.4, 'sawtooth', 0.12, { slideTo: 60 }); }
+  };
+})();
+
+/* ---------- STORAGE HELPERS ---------- */
+const DB = {
+  get(key, def) {
+    try {
+      const v = localStorage.getItem('sfn_' + key);
+      return v === null ? def : JSON.parse(v);
+    } catch (e) { return def; }
+  },
+  set(key, val) {
+    try { localStorage.setItem('sfn_' + key, JSON.stringify(val)); } catch (e) {}
+  }
+};
+
+/* ---------- GLOBAL STATE ---------- */
+const State = {
+  username: DB.get('username', null),
+  coins: DB.get('coins', 0),
+  gems: DB.get('gems', 0),
+  savedRun: DB.get('savedRun', null), // { level, score }
+  reviveCount: 0, // resets each death-cycle (in-memory only)
+  ownedShips: DB.get('ownedShips', ['interceptor']), // nave inicial já é dona
+  equippedShip: DB.get('equippedShip', 'interceptor')
+};
+
+function saveShips() {
+  DB.set('ownedShips', State.ownedShips);
+  DB.set('equippedShip', State.equippedShip);
+}
+
+function saveCurrency() {
+  DB.set('coins', State.coins);
+  DB.set('gems', State.gems);
+}
+
+function formatNum(n) {
+  n = Math.floor(n);
+  if (n >= 1000000) {
+    return (n / 1000000).toFixed(n % 1000000 === 0 ? 0 : 1).replace('.0', '') + 'M';
+  }
+  if (n >= 1000) {
+    return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1).replace('.0', '') + 'k';
+  }
+  return String(n);
+}
+
+/* ---------- SCREEN NAVIGATION ---------- */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function toast(msg, ms = 1800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._tid);
+  toast._tid = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+/* ---------- BACKGROUND STARFIELD (shared) ---------- */
+const bgCanvas = document.getElementById('bgStars');
+const bgCtx = bgCanvas.getContext('2d');
+let bgStars = [];
+
+function resizeBg() {
+  bgCanvas.width = bgCanvas.clientWidth * devicePixelRatio;
+  bgCanvas.height = bgCanvas.clientHeight * devicePixelRatio;
+  bgStars = [];
+  const count = 120;
+  for (let i = 0; i < count; i++) {
+    bgStars.push({
+      x: Math.random() * bgCanvas.width,
+      y: Math.random() * bgCanvas.height,
+      r: Math.random() * 1.6 + 0.3,
+      speed: Math.random() * 0.25 + 0.05,
+      alpha: Math.random() * 0.6 + 0.3
+    });
+  }
+}
+window.addEventListener('resize', resizeBg);
+resizeBg();
+
+function animateBg() {
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+  bgCtx.fillStyle = '#0a0505';
+  bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+  for (const s of bgStars) {
+    s.y += s.speed;
+    if (s.y > bgCanvas.height) { s.y = 0; s.x = Math.random() * bgCanvas.width; }
+    bgCtx.beginPath();
+    bgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    bgCtx.fillStyle = `rgba(255,255,255,${s.alpha})`;
+    bgCtx.fill();
+  }
+  requestAnimationFrame(animateBg);
+}
+animateBg();
+
+/* ---------- COIN & GEM ICON DRAW (reutilizável: menu, HUD, drops) ----------
+   Desenha centrado em (0,0), escala por `size` (raio aproximado).
+------------------------------------------------------------- */
+function drawCoinShape(ctx, size) {
+  const s = size;
+  ctx.save();
+  // sombra sutil
+  ctx.beginPath();
+  ctx.arc(0, s * 0.08, s, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fill();
+  // corpo com relevo (anel externo mais escuro + disco interno)
+  ctx.beginPath();
+  ctx.arc(0, 0, s, 0, Math.PI * 2);
+  ctx.fillStyle = '#a67c00';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(0, 0, s * 0.86, 0, Math.PI * 2);
+  const grad = ctx.createRadialGradient(-s * 0.28, -s * 0.28, s * 0.05, 0, 0, s * 0.9);
+  grad.addColorStop(0, '#fff3c4');
+  grad.addColorStop(0.5, '#ffd447');
+  grad.addColorStop(1, '#d4a017');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // estrela central (mais legível em tamanho pequeno que um "$")
+  ctx.save();
+  ctx.fillStyle = '#a67c00';
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const outerAng = -Math.PI / 2 + i * (Math.PI * 2 / 5);
+    const innerAng = outerAng + Math.PI / 5;
+    const ox = Math.cos(outerAng) * s * 0.42, oy = Math.sin(outerAng) * s * 0.42;
+    const ix = Math.cos(innerAng) * s * 0.18, iy = Math.sin(innerAng) * s * 0.18;
+    if (i === 0) ctx.moveTo(ox, oy); else ctx.lineTo(ox, oy);
+    ctx.lineTo(ix, iy);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  // brilho especular
+  ctx.beginPath();
+  ctx.ellipse(-s * 0.32, -s * 0.32, s * 0.16, s * 0.09, -0.6, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGemShape(ctx, size) {
+  const s = size;
+  ctx.save();
+  // corpo com 6 facetas reais (topo, 2 laterais superiores, 2 laterais inferiores, base)
+  const pTop = [0, -s], pR = [s * 0.85, -s * 0.32], pBR = [s * 0.5, s * 0.9], pBL = [-s * 0.5, s * 0.9], pL = [-s * 0.85, -s * 0.32];
+  ctx.beginPath();
+  ctx.moveTo(...pTop); ctx.lineTo(...pR); ctx.lineTo(...pBR); ctx.lineTo(...pBL); ctx.lineTo(...pL);
+  ctx.closePath();
+  const outerGrad = ctx.createLinearGradient(pL[0], pTop[1], pR[0], pBR[1]);
+  outerGrad.addColorStop(0, '#8a4fd8');
+  outerGrad.addColorStop(1, '#5c2fa0');
+  ctx.fillStyle = outerGrad;
+  ctx.fill();
+  // faceta central clara (dá volume/3D)
+  ctx.beginPath();
+  ctx.moveTo(...pTop); ctx.lineTo(s * 0.28, -s * 0.05); ctx.lineTo(0, s * 0.9); ctx.lineTo(-s * 0.28, -s * 0.05);
+  ctx.closePath();
+  const innerGrad = ctx.createLinearGradient(0, -s, 0, s * 0.9);
+  innerGrad.addColorStop(0, '#f0e0ff');
+  innerGrad.addColorStop(1, '#c9a3f5');
+  ctx.fillStyle = innerGrad;
+  ctx.fill();
+  // linhas de faceta
+  ctx.strokeStyle = 'rgba(92,47,160,0.7)';
+  ctx.lineWidth = Math.max(0.6, s * 0.05);
+  ctx.beginPath();
+  ctx.moveTo(...pTop); ctx.lineTo(0, s * 0.9);
+  ctx.moveTo(...pTop); ctx.lineTo(s * 0.28, -s * 0.05);
+  ctx.moveTo(...pTop); ctx.lineTo(-s * 0.28, -s * 0.05);
+  ctx.stroke();
+  ctx.strokeStyle = '#5c2fa0';
+  ctx.lineWidth = Math.max(0.8, s * 0.06);
+  ctx.beginPath();
+  ctx.moveTo(...pTop); ctx.lineTo(...pR); ctx.lineTo(...pBR); ctx.lineTo(...pBL); ctx.lineTo(...pL); ctx.closePath();
+  ctx.stroke();
+  // brilho especular
+  ctx.beginPath();
+  ctx.ellipse(-s * 0.15, -s * 0.45, s * 0.14, s * 0.08, -0.5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ---------- 10 SILHUETAS DE ASA/CAUDA (uma por nave da loja) ----------
+   Cada bloco desenha as asas e a cauda daquele "casco". A fuselagem
+   central (ver drawShipShape) é sempre a mesma — só isso aqui muda
+   entre as naves, o que já basta pra silhuetas bem diferentes.
+------------------------------------------------------------- */
+function drawShipWingsAndTail(ctx, s, casco, darkColor, accentColor) {
+  ctx.fillStyle = darkColor;
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = s * 0.01;
+
+  switch (casco) {
+    case 'compacta': // Duplex — asas curtas e retas, corpo mais "quadrado"
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.08, s * 0.0); ctx.lineTo(-s * 0.32, s * 0.14); ctx.lineTo(-s * 0.28, s * 0.24); ctx.lineTo(-s * 0.10, s * 0.16); ctx.closePath();
+      ctx.moveTo(s * 0.08, s * 0.0); ctx.lineTo(s * 0.32, s * 0.14); ctx.lineTo(s * 0.28, s * 0.24); ctx.lineTo(s * 0.10, s * 0.16); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.05, s * 0.2); ctx.lineTo(-s * 0.14, s * 0.36); ctx.lineTo(-s * 0.06, s * 0.34); ctx.closePath();
+      ctx.moveTo(s * 0.05, s * 0.2); ctx.lineTo(s * 0.14, s * 0.36); ctx.lineTo(s * 0.06, s * 0.34); ctx.closePath();
+      ctx.fillStyle = accentColor; ctx.fill();
+      break;
+
+    case 'fina': // Ventania — asas longas e finas, tipo interceptador veloz
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.07, -s * 0.05); ctx.lineTo(-s * 0.58, s * 0.12); ctx.lineTo(-s * 0.5, s * 0.2); ctx.lineTo(-s * 0.1, s * 0.14); ctx.closePath();
+      ctx.moveTo(s * 0.07, -s * 0.05); ctx.lineTo(s * 0.58, s * 0.12); ctx.lineTo(s * 0.5, s * 0.2); ctx.lineTo(s * 0.1, s * 0.14); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.04, s * 0.2); ctx.lineTo(-s * 0.24, s * 0.46); ctx.lineTo(-s * 0.08, s * 0.4); ctx.closePath();
+      ctx.moveTo(s * 0.04, s * 0.2); ctx.lineTo(s * 0.24, s * 0.46); ctx.lineTo(s * 0.08, s * 0.4); ctx.closePath();
+      ctx.fillStyle = accentColor; ctx.fill();
+      break;
+
+    case 'robusta': // Guardiã — asas largas e trapezoidais, aparência de tanque
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.1, -s * 0.05); ctx.lineTo(-s * 0.5, s * 0.28); ctx.lineTo(-s * 0.46, s * 0.4); ctx.lineTo(-s * 0.14, s * 0.24); ctx.closePath();
+      ctx.moveTo(s * 0.1, -s * 0.05); ctx.lineTo(s * 0.5, s * 0.28); ctx.lineTo(s * 0.46, s * 0.4); ctx.lineTo(s * 0.14, s * 0.24); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.08, s * 0.24); ctx.lineTo(-s * 0.22, s * 0.46); ctx.lineTo(-s * 0.1, s * 0.44); ctx.closePath();
+      ctx.moveTo(s * 0.08, s * 0.24); ctx.lineTo(s * 0.22, s * 0.46); ctx.lineTo(s * 0.1, s * 0.44); ctx.closePath();
+      ctx.fillStyle = accentColor; ctx.fill();
+      break;
+
+    case 'furtiva': // Espectro — asas em ângulo agudo tipo "stealth"
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.06, -s * 0.15); ctx.lineTo(-s * 0.48, s * 0.06); ctx.lineTo(-s * 0.3, s * 0.22); ctx.lineTo(-s * 0.09, s * 0.05); ctx.closePath();
+      ctx.moveTo(s * 0.06, -s * 0.15); ctx.lineTo(s * 0.48, s * 0.06); ctx.lineTo(s * 0.3, s * 0.22); ctx.lineTo(s * 0.09, s * 0.05); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, s * 0.18); ctx.lineTo(-s * 0.16, s * 0.44); ctx.lineTo(s * 0.16, s * 0.44); ctx.closePath();
+      ctx.fillStyle = accentColor; ctx.fill();
+      break;
+
+    case 'angular': // Perseguidora — asas em flecha bem inclinada pra trás
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.08, -s * 0.1); ctx.lineTo(-s * 0.5, s * 0.32); ctx.lineTo(-s * 0.38, s * 0.36); ctx.lineTo(-s * 0.1, s * 0.14); ctx.closePath();
+      ctx.moveTo(s * 0.08, -s * 0.1); ctx.lineTo(s * 0.5, s * 0.32); ctx.lineTo(s * 0.38, s * 0.36); ctx.lineTo(s * 0.1, s * 0.14); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.06, s * 0.22); ctx.lineTo(-s * 0.18, s * 0.4); ctx.lineTo(-s * 0.08, s * 0.4); ctx.closePath();
+      ctx.moveTo(s * 0.06, s * 0.22); ctx.lineTo(s * 0.18, s * 0.4); ctx.lineTo(s * 0.08, s * 0.4); ctx.closePath();
+      ctx.fillStyle = accentColor; ctx.fill();
+      break;
+
+    case 'pesada': // Colossus — asas grossas duplas (dois planos), visual "pesado"
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.1, -s * 0.06); ctx.lineTo(-s * 0.42, s * 0.1); ctx.lineTo(-s * 0.42, s * 0.2); ctx.lineTo(-s * 0.12, s * 0.16); ctx.closePath();
+      ctx.moveTo(-s * 0.1, s * 0.16); ctx.lineTo(-s * 0.36, s * 0.28); ctx.lineTo(-s * 0.34, s * 0.36); ctx.lineTo(-s * 0.12, s * 0.28); ctx.closePath();
+      ctx.moveTo(s * 0.1, -s * 0.06); ctx.lineTo(s * 0.42, s * 0.1); ctx.lineTo(s * 0.42, s * 0.2); ctx.lineTo(s * 0.12, s * 0.16); ctx.closePath();
+      ctx.moveTo(s * 0.1, s * 0.16); ctx.lineTo(s * 0.36, s * 0.28); ctx.lineTo(s * 0.34, s * 0.36); ctx.lineTo(s * 0.12, s * 0.28); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.07, s * 0.3); ctx.lineTo(-s * 0.2, s * 0.46); ctx.lineTo(-s * 0.09, s * 0.44); ctx.closePath();
+      ctx.moveTo(s * 0.07, s * 0.3); ctx.lineTo(s * 0.2, s * 0.46); ctx.lineTo(s * 0.09, s * 0.44); ctx.closePath();
+      ctx.fillStyle = accentColor; ctx.fill();
+      break;
+
+    case 'elegante': // Aurora — asas curvas suaves (arco), visual refinado
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.08, -s * 0.08);
+      ctx.quadraticCurveTo(-s * 0.5, s * 0.02, -s * 0.42, s * 0.28);
+      ctx.quadraticCurveTo(-s * 0.24, s * 0.2, -s * 0.11, s * 0.14);
+      ctx.closePath();
+      ctx.moveTo(s * 0.08, -s * 0.08);
+      ctx.quadraticCurveTo(s * 0.5, s * 0.02, s * 0.42, s * 0.28);
+      ctx.quadraticCurveTo(s * 0.24, s * 0.2, s * 0.11, s * 0.14);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, s * 0.2); ctx.quadraticCurveTo(-s * 0.14, s * 0.42, 0, s * 0.46); ctx.quadraticCurveTo(s * 0.14, s * 0.42, 0, s * 0.2);
+      ctx.fillStyle = accentColor; ctx.fill();
+      break;
+
+    case 'dupla': // Titania — duas asas paralelas destacadas (biplano espacial)
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.09, -s * 0.1); ctx.lineTo(-s * 0.5, s * 0.08); ctx.lineTo(-s * 0.5, s * 0.16); ctx.lineTo(-s * 0.11, s * 0.06); ctx.closePath();
+      ctx.moveTo(s * 0.09, -s * 0.1); ctx.lineTo(s * 0.5, s * 0.08); ctx.lineTo(s * 0.5, s * 0.16); ctx.lineTo(s * 0.11, s * 0.06); ctx.closePath();
+      ctx.moveTo(-s * 0.1, s * 0.12); ctx.lineTo(-s * 0.4, s * 0.26); ctx.lineTo(-s * 0.4, s * 0.34); ctx.lineTo(-s * 0.12, s * 0.24); ctx.closePath();
+      ctx.moveTo(s * 0.1, s * 0.12); ctx.lineTo(s * 0.4, s * 0.26); ctx.lineTo(s * 0.4, s * 0.34); ctx.lineTo(s * 0.12, s * 0.24); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.06, s * 0.26); ctx.lineTo(-s * 0.18, s * 0.44); ctx.lineTo(-s * 0.08, s * 0.42); ctx.closePath();
+      ctx.moveTo(s * 0.06, s * 0.26); ctx.lineTo(s * 0.18, s * 0.44); ctx.lineTo(s * 0.08, s * 0.42); ctx.closePath();
+      ctx.fillStyle = accentColor; ctx.fill();
+      break;
+
+    case 'suprema': // Ômega — asas grandes em X, silhueta mais imponente do jogo
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.1, -s * 0.12); ctx.lineTo(-s * 0.56, s * 0.36); ctx.lineTo(-s * 0.44, s * 0.4); ctx.lineTo(-s * 0.12, s * 0.1); ctx.closePath();
+      ctx.moveTo(s * 0.1, -s * 0.12); ctx.lineTo(s * 0.56, s * 0.36); ctx.lineTo(s * 0.44, s * 0.4); ctx.lineTo(s * 0.12, s * 0.1); ctx.closePath();
+      ctx.moveTo(-s * 0.1, s * 0.16); ctx.lineTo(-s * 0.44, -s * 0.02); ctx.lineTo(-s * 0.38, s * 0.06); ctx.lineTo(-s * 0.12, s * 0.22); ctx.closePath();
+      ctx.moveTo(s * 0.1, s * 0.16); ctx.lineTo(s * 0.44, -s * 0.02); ctx.lineTo(s * 0.38, s * 0.06); ctx.lineTo(s * 0.12, s * 0.22); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.07, s * 0.28); ctx.lineTo(-s * 0.22, s * 0.48); ctx.lineTo(-s * 0.09, s * 0.46); ctx.closePath();
+      ctx.moveTo(s * 0.07, s * 0.28); ctx.lineTo(s * 0.22, s * 0.48); ctx.lineTo(s * 0.09, s * 0.46); ctx.closePath();
+      ctx.fillStyle = accentColor; ctx.fill();
+      break;
+
+    default: // 'padrao' — Interceptora (visual original do jogo)
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.09, -s * 0.02); ctx.lineTo(-s * 0.46, s * 0.22); ctx.lineTo(-s * 0.4, s * 0.3); ctx.lineTo(-s * 0.12, s * 0.18); ctx.closePath();
+      ctx.moveTo(s * 0.09, -s * 0.02); ctx.lineTo(s * 0.46, s * 0.22); ctx.lineTo(s * 0.4, s * 0.3); ctx.lineTo(s * 0.12, s * 0.18); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.06, s * 0.22); ctx.lineTo(-s * 0.2, s * 0.42); ctx.lineTo(-s * 0.09, s * 0.4); ctx.closePath();
+      ctx.moveTo(s * 0.06, s * 0.22); ctx.lineTo(s * 0.2, s * 0.42); ctx.lineTo(s * 0.09, s * 0.4); ctx.closePath();
+      ctx.fillStyle = accentColor; ctx.fill();
+      break;
+  }
+}
+
+/* ---------- SHIP ICON DRAW (used for logo + in-game) ----------
+   Draws a detailed fighter-jet silhouette centered at (0,0), pointing up,
+   scaled to `size`. Used by logo canvas and gameplay ship.
+   `casco` seleciona o formato de asas/cauda (ver drawShipWingsAndTail).
+   A fuselagem central e o cockpit ficam fixos — é a "assinatura visual"
+   do jogo — só a silhueta das asas muda entre as 10 naves da loja.
+------------------------------------------------------------- */
+function drawShipShape(ctx, size, opts = {}, casco = 'padrao') {
+  const s = size;
+  const bodyColor = opts.bodyColor || '#e6e9ee';
+  const darkColor = opts.darkColor || '#9aa3af';
+  const accentColor = opts.accentColor || '#e8342a';
+  const cockpitColor = opts.cockpitColor || '#22c5e8';
+
+  ctx.save();
+
+  // engine glow (behind)
+  if (opts.thrust !== false) {
+    const glowGrad = ctx.createRadialGradient(0, s * 0.62, 0, 0, s * 0.62, s * 0.35);
+    glowGrad.addColorStop(0, 'rgba(255,150,60,0.9)');
+    glowGrad.addColorStop(1, 'rgba(255,80,20,0)');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, s * 0.62, s * 0.22, s * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // asas + cauda (variam por nave) — desenhadas ANTES da fuselagem central
+  // pra ficarem "atrás" do corpo principal, como numa nave de verdade
+  drawShipWingsAndTail(ctx, s, casco, darkColor, accentColor);
+
+  // main fuselage
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 0.55);              // nose tip
+  ctx.lineTo(s * 0.07, -s * 0.35);
+  ctx.lineTo(s * 0.09, s * 0.05);
+  ctx.lineTo(s * 0.16, s * 0.18);
+  ctx.lineTo(s * 0.10, s * 0.4);
+  ctx.lineTo(s * 0.05, s * 0.5);
+  ctx.lineTo(0, s * 0.46);
+  ctx.lineTo(-s * 0.05, s * 0.5);
+  ctx.lineTo(-s * 0.10, s * 0.4);
+  ctx.lineTo(-s * 0.16, s * 0.18);
+  ctx.lineTo(-s * 0.09, s * 0.05);
+  ctx.lineTo(-s * 0.07, -s * 0.35);
+  ctx.closePath();
+  const bodyGrad = ctx.createLinearGradient(0, -s * 0.55, 0, s * 0.5);
+  bodyGrad.addColorStop(0, bodyColor);
+  bodyGrad.addColorStop(1, darkColor);
+  ctx.fillStyle = bodyGrad;
+  ctx.fill();
+  ctx.lineWidth = s * 0.012;
+  ctx.strokeStyle = darkColor;
+  ctx.stroke();
+
+  // cockpit
+  ctx.beginPath();
+  ctx.ellipse(0, -s * 0.2, s * 0.045, s * 0.11, 0, 0, Math.PI * 2);
+  const cockGrad = ctx.createLinearGradient(0, -s * 0.31, 0, -s * 0.09);
+  cockGrad.addColorStop(0, '#fff');
+  cockGrad.addColorStop(1, cockpitColor);
+  ctx.fillStyle = cockGrad;
+  ctx.fill();
+
+  // center accent line
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 0.35);
+  ctx.lineTo(0, s * 0.35);
+  ctx.strokeStyle = 'rgba(232,52,42,0.5)';
+  ctx.lineWidth = s * 0.01;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/* ============================================================
+   SISTEMA DE NAVES (LOJA)
+   ============================================================
+   Cada nave tem:
+   - casco: formato do corpo (função de desenho própria)
+   - cores: paleta usada no drawShipShape
+   - tiro: como ela atira (função própria, chamada no lugar do
+     tiro padrão)
+   - habilidade: efeito automático que dispara a cada 5s (300
+     frames a 60fps) enquanto essa nave está equipada
+   Preços sobem em moeda conforme o jogador progride na loja.
+   ============================================================ */
+
+const SHIP_ABILITY_COOLDOWN = 300; // 5s a 60fps
+
+const SHIPS = [
+  {
+    id: 'interceptor',
+    nome: 'INTERCEPTORA',
+    preco: 0,
+    raridade: 'comum',
+    casco: 'padrao',
+    cores: { bodyColor: '#eef1f5', darkColor: '#a7afba', accentColor: '#e8342a', cockpitColor: '#22c5e8' },
+    tiroDesc: 'Tiro único reto',
+    habilidadeDesc: 'Nenhuma (nave inicial)',
+    tiro(p) { Game.bullets.push({ x: p.x, y: p.y - 24, vy: -9, r: 4 }); },
+    habilidade(p) { /* sem habilidade */ }
+  },
+  {
+    id: 'duplex',
+    nome: 'DUPLEX MK1',
+    preco: 800,
+    raridade: 'comum',
+    casco: 'compacta',
+    cores: { bodyColor: '#d7f5ff', darkColor: '#5a8ea3', accentColor: '#22c5e8', cockpitColor: '#fff' },
+    tiroDesc: 'Tiro duplo paralelo',
+    habilidadeDesc: 'A cada 5s: escudo que bloqueia o próximo hit',
+    tiro(p) {
+      Game.bullets.push({ x: p.x - 10, y: p.y - 20, vy: -9, r: 3.4 });
+      Game.bullets.push({ x: p.x + 10, y: p.y - 20, vy: -9, r: 3.4 });
+    },
+    habilidade(p) {
+      Game.shieldCharges = (Game.shieldCharges || 0) + 1;
+      spawnAbilityText(p, 'ESCUDO+');
+    }
+  },
+  {
+    id: 'ventania',
+    nome: 'VENTANIA',
+    preco: 1500,
+    raridade: 'raro',
+    casco: 'fina',
+    cores: { bodyColor: '#eafff0', darkColor: '#5aa370', accentColor: '#2ecc71', cockpitColor: '#fff' },
+    tiroDesc: 'Tiro rápido (cadência maior)',
+    habilidadeDesc: 'A cada 5s: rajada tripla instantânea',
+    fireRateMod: 0.7,
+    tiro(p) { Game.bullets.push({ x: p.x, y: p.y - 24, vy: -10.5, r: 3.6 }); },
+    habilidade(p) {
+      for (let a = -1; a <= 1; a++) {
+        Game.bullets.push({ x: p.x + a * 14, y: p.y - 22, vy: -9, vx: a * 1.4, r: 4 });
+      }
+      spawnAbilityText(p, 'RAJADA!');
+    }
+  },
+  {
+    id: 'guardia',
+    nome: 'GUARDIÃ',
+    preco: 2400,
+    raridade: 'raro',
+    casco: 'robusta',
+    cores: { bodyColor: '#f0e6d2', darkColor: '#8a7550', accentColor: '#f2c31a', cockpitColor: '#22c5e8' },
+    tiroDesc: 'Tiro reto reforçado (mais dano)',
+    habilidadeDesc: 'A cada 5s: recupera um pouco de vida',
+    dano: 2,
+    tiro(p) { Game.bullets.push({ x: p.x, y: p.y - 24, vy: -8.4, r: 5, dano: 2 }); },
+    habilidade(p) {
+      Game.hp = Math.min(Game.maxHp, Game.hp + Game.maxHp * 0.08);
+      updateHUD();
+      spawnAbilityText(p, '+VIDA');
+    }
+  },
+  {
+    id: 'espectro',
+    nome: 'ESPECTRO',
+    preco: 3600,
+    raridade: 'epico',
+    casco: 'furtiva',
+    cores: { bodyColor: '#e0d7ff', darkColor: '#6a5a9a', accentColor: '#b98cf2', cockpitColor: '#fff' },
+    tiroDesc: 'Tiro em leque (3 direções)',
+    habilidadeDesc: 'A cada 5s: onda que empurra e atordoa inimigos próximos',
+    tiro(p) {
+      Game.bullets.push({ x: p.x, y: p.y - 24, vy: -9, r: 3.6 });
+      Game.bullets.push({ x: p.x, y: p.y - 24, vy: -8.6, vx: -2.2, r: 3.2 });
+      Game.bullets.push({ x: p.x, y: p.y - 24, vy: -8.6, vx: 2.2, r: 3.2 });
+    },
+    habilidade(p) {
+      for (const e of Game.enemies) {
+        const d = Math.hypot(e.x - p.x, e.y - p.y);
+        if (d < 160) { e.stun = 60; e.vy *= 0.2; }
+      }
+      spawnAbilityText(p, 'ONDA!');
+    }
+  },
+  {
+    id: 'perseguidora',
+    nome: 'PERSEGUIDORA',
+    preco: 5200,
+    raridade: 'epico',
+    casco: 'angular',
+    cores: { bodyColor: '#ffe6d7', darkColor: '#a3663a', accentColor: '#ff8c1a', cockpitColor: '#22c5e8' },
+    tiroDesc: 'Tiro teleguiado leve',
+    habilidadeDesc: 'A cada 5s: dispara míssil perseguidor extra',
+    tiro(p) {
+      const target = nearestEnemyTo(p.x, p.y - 40);
+      let vx = 0;
+      if (target) vx = Math.max(-1.6, Math.min(1.6, (target.x - p.x) / 90));
+      Game.bullets.push({ x: p.x, y: p.y - 24, vy: -9, vx, r: 4 });
+    },
+    habilidade(p) {
+      Game.missiles.push({ x: p.x, y: p.y - 20, vy: -6, r: 5, target: null, life: 240 });
+      spawnAbilityText(p, 'MÍSSIL!');
+    }
+  },
+  {
+    id: 'colossus',
+    nome: 'COLOSSUS',
+    preco: 7500,
+    raridade: 'lendario',
+    casco: 'pesada',
+    cores: { bodyColor: '#d0d5da', darkColor: '#4a4f55', accentColor: '#e8342a', cockpitColor: '#f2c31a' },
+    tiroDesc: 'Tiro largo (3 canos fixos)',
+    habilidadeDesc: 'A cada 5s: explosão de área ao redor da nave',
+    tiro(p) {
+      Game.bullets.push({ x: p.x - 16, y: p.y - 18, vy: -8.6, r: 3.6 });
+      Game.bullets.push({ x: p.x, y: p.y - 24, vy: -8.6, r: 4.4 });
+      Game.bullets.push({ x: p.x + 16, y: p.y - 18, vy: -8.6, r: 3.6 });
+    },
+    habilidade(p) {
+      for (const e of Game.enemies) {
+        const d = Math.hypot(e.x - p.x, e.y - p.y);
+        if (d < 150) { e.hp -= 3; spawnParticles(e.x, e.y, '#ff8844', 6); }
+      }
+      spawnAbilityText(p, 'BOOM!');
+    }
+  },
+  {
+    id: 'aurora',
+    nome: 'AURORA',
+    preco: 9800,
+    raridade: 'lendario',
+    casco: 'elegante',
+    cores: { bodyColor: '#fff0f8', darkColor: '#a35a80', accentColor: '#ff5aa0', cockpitColor: '#22c5e8' },
+    tiroDesc: 'Tiro duplo perfurante (atravessa inimigos)',
+    habilidadeDesc: 'A cada 5s: fica invulnerável por 1 segundo',
+    tiro(p) {
+      Game.bullets.push({ x: p.x - 8, y: p.y - 22, vy: -10, r: 3.8, perfura: true });
+      Game.bullets.push({ x: p.x + 8, y: p.y - 22, vy: -10, r: 3.8, perfura: true });
+    },
+    habilidade(p) {
+      Game.invuln = Math.max(Game.invuln, 60);
+      spawnAbilityText(p, 'INVULNERÁVEL');
+    }
+  },
+  {
+    id: 'titania',
+    nome: 'TITANIA',
+    preco: 13000,
+    raridade: 'lendario',
+    casco: 'dupla',
+    cores: { bodyColor: '#fff8d7', darkColor: '#a38a3a', accentColor: '#f2c31a', cockpitColor: '#fff' },
+    tiroDesc: 'Rajada em leque de 5 tiros',
+    habilidadeDesc: 'A cada 5s: lentidão em todos os inimigos na tela',
+    tiro(p) {
+      for (let a = -2; a <= 2; a++) {
+        Game.bullets.push({ x: p.x, y: p.y - 22, vy: -9, vx: a * 1.1, r: 3.2 });
+      }
+    },
+    habilidade(p) {
+      for (const e of Game.enemies) e.slowT = 90;
+      spawnAbilityText(p, 'LENTIDÃO');
+    }
+  },
+  {
+    id: 'omega',
+    nome: 'ÔMEGA',
+    preco: 18000,
+    raridade: 'galaxia',
+    casco: 'suprema',
+    cores: { bodyColor: '#101018', darkColor: '#000', accentColor: '#b98cf2', cockpitColor: '#e8342a' },
+    tiroDesc: 'Tiro triplo perfurante de alto dano',
+    habilidadeDesc: 'A cada 5s: dispara onda + míssil + cura pequena (combo)',
+    dano: 2,
+    tiro(p) {
+      Game.bullets.push({ x: p.x, y: p.y - 24, vy: -9.5, r: 4.6, dano: 2, perfura: true });
+      Game.bullets.push({ x: p.x - 12, y: p.y - 20, vy: -9, r: 3.6, perfura: true });
+      Game.bullets.push({ x: p.x + 12, y: p.y - 20, vy: -9, r: 3.6, perfura: true });
+    },
+    habilidade(p) {
+      for (const e of Game.enemies) {
+        const d = Math.hypot(e.x - p.x, e.y - p.y);
+        if (d < 140) { e.stun = 40; }
+      }
+      Game.missiles.push({ x: p.x, y: p.y - 20, vy: -6, r: 5, target: null, life: 240 });
+      Game.hp = Math.min(Game.maxHp, Game.hp + Game.maxHp * 0.04);
+      updateHUD();
+      spawnAbilityText(p, 'ÔMEGA COMBO');
+    }
+  }
+];
+
+function getShipById(id) {
+  return SHIPS.find(s => s.id === id) || SHIPS[0];
+}
+
+function spawnAbilityText(p, text) {
+  Game.particles.push({ x: p.x, y: p.y - 50, vx: 0, vy: -0.6, life: 50, maxLife: 50, color: '#22c5e8', isText: true, text });
+}
+(function drawLogo() {
+  const c = document.getElementById('logoCanvas');
+  const ctx = c.getContext('2d');
+  const dpr = devicePixelRatio || 1;
+  c.width = 130 * dpr; c.height = 130 * dpr;
+  ctx.scale(dpr, dpr);
+
+  // radar rings
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  for (let r = 20; r <= 50; r += 15) {
+    ctx.beginPath();
+    ctx.arc(65, 65, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // small stars
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  const starPts = [[30, 25], [95, 30], [100, 90], [25, 95], [65, 15]];
+  for (const [x, y] of starPts) {
+    ctx.beginPath();
+    ctx.arc(x, y, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.save();
+  ctx.translate(65, 68);
+  drawShipShape(ctx, 78, { bodyColor: '#f0f2f5', darkColor: '#c3c9d1', accentColor: '#e8342a', cockpitColor: '#8fd8ea', thrust: false });
+  ctx.restore();
+})();
+
+/* coin + gem icons for stats bar */
+(function drawCoinGem() {
+  const dpr = devicePixelRatio || 1;
+
+  const coinC = document.getElementById('coinIcon');
+  const coinCtx = coinC.getContext('2d');
+  coinC.width = 22 * dpr; coinC.height = 22 * dpr; coinCtx.scale(dpr, dpr);
+  coinCtx.translate(11, 11);
+  drawCoinShape(coinCtx, 9.5);
+
+  const gemC = document.getElementById('gemIcon');
+  const gemCtx = gemC.getContext('2d');
+  gemC.width = 20 * dpr; gemC.height = 20 * dpr; gemCtx.scale(dpr, dpr);
+  gemCtx.translate(10, 10);
+  drawGemShape(gemCtx, 8.5);
+
+  // pause icon
+  const pC = document.getElementById('pauseIcon');
+  const pCtx = pC.getContext('2d');
+  pC.width = 16 * dpr; pC.height = 16 * dpr; pCtx.scale(dpr, dpr);
+  pCtx.fillStyle = '#ccc';
+  pCtx.fillRect(3, 1, 4, 14);
+  pCtx.fillRect(9, 1, 4, 14);
+
+  // mini-icones do HUD in-game (moeda e diamante)
+  const hCoinC = document.getElementById('hudCoinIcon');
+  const hCoinCtx = hCoinC.getContext('2d');
+  hCoinC.width = 14 * dpr; hCoinC.height = 14 * dpr; hCoinCtx.scale(dpr, dpr);
+  hCoinCtx.translate(7, 7);
+  drawCoinShape(hCoinCtx, 6);
+
+  const hGemC = document.getElementById('hudGemIcon');
+  const hGemCtx = hGemC.getContext('2d');
+  hGemC.width = 14 * dpr; hGemC.height = 14 * dpr; hGemCtx.scale(dpr, dpr);
+  hGemCtx.translate(7, 7);
+  drawGemShape(hGemCtx, 6);
+})();
+
+/* ---------- UI SYNC ---------- */
+function refreshMenuStats() {
+  document.getElementById('coinVal').textContent = formatNum(State.coins);
+  document.getElementById('gemVal').textContent = formatNum(State.gems);
+}
+
+/* ---------- FLOW: SPLASH -> MENU (sem conta, sem cadastro) ---------- */
+function ensureUsername() {
+  // Gera um nome automático na primeira vez que o jogo abre.
+  // O jogador pode trocar depois em CONFIG (sem restrição de "único").
+  if (!State.username) {
+    const n = 1000 + Math.floor(Math.random() * 9000);
+    State.username = 'Piloto' + n;
+    DB.set('username', State.username);
+  }
+}
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    ensureUsername();
+    showScreen('menuScreen');
+    refreshMenuStats();
+    checkGlobalMessage();
+  }, 2600);
+});
+
+/* ---------- MENU BUTTONS ---------- */
+document.getElementById('btnModo').addEventListener('click', () => {
+  const title = document.getElementById('modeClassicTitle');
+  const desc = document.getElementById('modeClassicDesc');
+  if (State.savedRun) {
+    title.textContent = 'CONTINUAR';
+    desc.textContent = 'Retomar do nível ' + State.savedRun.level + ' — pontuação ' + formatNum(State.savedRun.score);
+  } else {
+    title.textContent = 'MODO CLÁSSICO';
+    desc.textContent = 'Sobreviva às ondas e derrote os chefes';
+  }
+  document.getElementById('modeModal').classList.add('active');
+});
+document.getElementById('closeModeModal').addEventListener('click', () => {
+  document.getElementById('modeModal').classList.remove('active');
+});
+
+function openSoon(title) {
+  document.getElementById('soonTitle').textContent = title;
+  document.getElementById('soonModal').classList.add('active');
+}
+document.getElementById('closeSoonModal').addEventListener('click', () => {
+  document.getElementById('soonModal').classList.remove('active');
+});
+document.getElementById('btnLoja').addEventListener('click', () => {
+  showScreen('lojaScreen');
+  renderLoja();
+});
+document.getElementById('btnInv').addEventListener('click', () => {
+  showScreen('invScreen');
+  renderInventory('todos');
+});
+document.getElementById('invBackBtn').addEventListener('click', () => {
+  showScreen('menuScreen');
+  refreshMenuStats();
+});
+
+/* ============================================================
+   INVENTÁRIO — mostra só as naves que o jogador JÁ TEM
+   ============================================================ */
+const RARITY_LABEL = { comum: 'COMUM', raro: 'RARO', epico: 'ÉPICO', lendario: 'LENDÁRIO', galaxia: 'GALÁXIA' };
+const RARITY_ORDER = ['galaxia', 'lendario', 'epico', 'raro', 'comum']; // mais raro primeiro
+
+function getAllOwnedShipObjects() {
+  return State.ownedShips
+    .map(id => SHIPS.find(s => s.id === id) || LEGENDARY_POOL.find(l => l.id === id))
+    .filter(Boolean);
+}
+
+function renderInventory(filtro) {
+  const totalPossivel = SHIPS.length + LEGENDARY_POOL.length; // 10 normais + 4 lendárias rotativas = 14
+  document.getElementById('invCountVal').textContent = State.ownedShips.length + '/' + totalPossivel;
+
+  let owned = getAllOwnedShipObjects();
+  owned.sort((a, b) => RARITY_ORDER.indexOf(a.raridade) - RARITY_ORDER.indexOf(b.raridade));
+  if (filtro !== 'todos') owned = owned.filter(s => s.raridade === filtro);
+
+  const grid = document.getElementById('invGrid');
+  grid.innerHTML = '';
+
+  if (owned.length === 0) {
+    grid.innerHTML = '<div class="invEmpty">Nenhuma nave nessa raridade ainda.<br>Continue jogando e explorando a Loja e a Roleta!</div>';
+    return;
+  }
+
+  owned.forEach(ship => {
+    const card = document.createElement('div');
+    card.className = 'invCard r-' + ship.raridade;
+    card.innerHTML = `
+      <canvas class="invCardCanvas"></canvas>
+      <div class="invName">${ship.nome}</div>
+      <div class="invRarityTag">${RARITY_LABEL[ship.raridade]}</div>
+    `;
+    grid.appendChild(card);
+    drawShipThumb(card.querySelector('.invCardCanvas'), ship);
+  });
+}
+
+document.getElementById('invFilterRow').addEventListener('click', (e) => {
+  const chip = e.target.closest('.invFilterChip');
+  if (!chip) return;
+  document.querySelectorAll('.invFilterChip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  renderInventory(chip.dataset.r);
+});
+document.getElementById('btnConfig').addEventListener('click', () => {
+  showScreen('configScreen');
+  renderConfig();
+});
+document.getElementById('configBackBtn').addEventListener('click', () => {
+  showScreen('menuScreen');
+  refreshMenuStats();
+});
+
+/* ============================================================
+   CONFIG
+   ============================================================ */
+function renderConfig() {
+  document.getElementById('configNameInput').value = State.username;
+  document.getElementById('creditEstudio').textContent = ADMIN_CONFIG.creditos.estudio;
+  const insta = document.getElementById('creditInstagram');
+  const handle = ADMIN_CONFIG.creditos.instagram;
+  insta.textContent = handle;
+  insta.href = 'https://instagram.com/' + handle.replace('@', '');
+}
+
+document.getElementById('configNameSaveBtn').addEventListener('click', () => {
+  const val = document.getElementById('configNameInput').value.trim();
+  if (val.length < 3) { toast('Nome muito curto'); return; }
+  State.username = val;
+  DB.set('username', val);
+  toast('Nome atualizado!');
+});
+
+/* ============================================================
+   MENSAGEM GLOBAL — controlada pelo admin.js (troque o "id" lá
+   pra fazer a mensagem reaparecer pra quem já fechou a anterior)
+   ============================================================ */
+function checkGlobalMessage() {
+  const cfg = ADMIN_CONFIG.mensagemGlobal;
+  if (!cfg || !cfg.ativa) return;
+  const jaViu = DB.get('globalMsgSeenId', null);
+  if (jaViu === cfg.id) return; // já fechou esta versão da mensagem
+
+  document.getElementById('globalMsgTitle').textContent = cfg.titulo;
+  document.getElementById('globalMsgText').textContent = cfg.texto;
+  document.getElementById('globalMsgBanner').classList.add('show');
+}
+document.getElementById('globalMsgCloseBtn').addEventListener('click', () => {
+  DB.set('globalMsgSeenId', ADMIN_CONFIG.mensagemGlobal.id);
+  document.getElementById('globalMsgBanner').classList.remove('show');
+});
+document.getElementById('btnMais').addEventListener('click', () => {
+  showScreen('eventosScreen');
+  renderEventos();
+});
+document.getElementById('eventosBackBtn').addEventListener('click', () => {
+  showScreen('menuScreen');
+  refreshMenuStats();
+});
+
+/* ============================================================
+   EVENTOS — dados salvos (progresso do jogador nos eventos)
+   ============================================================ */
+const EventState = {
+  codigosResgatados: DB.get('codigosResgatados', []),      // lista de códigos já usados por este jogador
+  diarioUltimoDia: DB.get('diarioUltimoDia', null),          // "AAAA-MM-DD" do último resgate
+  diarioStreak: DB.get('diarioStreak', 0),                    // em que dia do ciclo de 14 está
+  roletaUltimaData: DB.get('roletaUltimaData', null),         // "AAAA-MM-DD" pra resetar giros à meia-noite
+  roletaGirosHoje: DB.get('roletaGirosHoje', 0)
+};
+function saveEventState() {
+  DB.set('codigosResgatados', EventState.codigosResgatados);
+  DB.set('diarioUltimoDia', EventState.diarioUltimoDia);
+  DB.set('diarioStreak', EventState.diarioStreak);
+  DB.set('roletaUltimaData', EventState.roletaUltimaData);
+  DB.set('roletaGirosHoje', EventState.roletaGirosHoje);
+}
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function yesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function refreshEventosCurrency() {
+  document.getElementById('eventosCoinVal').textContent = '🪙 ' + formatNum(State.coins);
+  document.getElementById('eventosGemVal').textContent = '💎 ' + formatNum(State.gems);
+}
+
+function renderEventos() {
+  refreshEventosCurrency();
+  renderDailyReward();
+  renderRoulette();
+}
+
+/* ---------- PRÊMIO DIÁRIO ---------- */
+function renderDailyReward() {
+  const lista = ADMIN_CONFIG.premioDiario;
+  const grid = document.getElementById('dailyGrid');
+  grid.innerHTML = '';
+
+  const jaResgatouHoje = EventState.diarioUltimoDia === todayStr();
+  // dia atual do ciclo: se já resgatou hoje, mostra o streak atual; senão, é o próximo a resgatar
+  const diaAtual = ((EventState.diarioStreak) % lista.length) + 1;
+
+  lista.forEach((item) => {
+    const cell = document.createElement('div');
+    const isPast = item.dia < diaAtual || (item.dia === diaAtual && jaResgatouHoje);
+    const isToday = item.dia === diaAtual && !jaResgatouHoje;
+    cell.className = 'dailyCell' + (isPast ? ' done' : '') + (isToday ? ' today' : '');
+    cell.innerHTML = `
+      <div class="dNum">D${item.dia}</div>
+      ${item.rubis > 0 ? `💎${item.rubis}` : `🪙${formatNum(item.moedas)}`}
+    `;
+    grid.appendChild(cell);
+  });
+
+  const btn = document.getElementById('dailyClaimBtn');
+  if (jaResgatouHoje) {
+    btn.disabled = true;
+    btn.textContent = 'JÁ RESGATADO HOJE';
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'RESGATAR DIA ' + diaAtual;
+  }
+}
+
+document.getElementById('dailyClaimBtn').addEventListener('click', () => {
+  if (EventState.diarioUltimoDia === todayStr()) return;
+
+  // se pulou um dia (não veio ontem nem hoje ainda), reinicia o ciclo do zero
+  const veioOntem = EventState.diarioUltimoDia === yesterdayStr();
+  if (EventState.diarioUltimoDia !== null && !veioOntem) {
+    EventState.diarioStreak = 0;
+  }
+
+  const lista = ADMIN_CONFIG.premioDiario;
+  const diaAtual = (EventState.diarioStreak % lista.length) + 1;
+  const premio = lista.find(p => p.dia === diaAtual) || lista[0];
+
+  State.coins += premio.moedas;
+  State.gems += premio.rubis;
+  saveCurrency();
+
+  EventState.diarioUltimoDia = todayStr();
+  EventState.diarioStreak++;
+  saveEventState();
+
+  toast(`Dia ${diaAtual}: +${formatNum(premio.moedas)} moedas${premio.rubis > 0 ? ' e +' + premio.rubis + ' rubis' : ''}!`);
+  refreshEventosCurrency();
+  refreshMenuStats();
+  renderDailyReward();
+});
+
+/* ---------- ROLETA (sorteio ponderado por "peso") ---------- */
+function sortearFatiaRoleta() {
+  const fatias = ADMIN_CONFIG.roleta.fatias;
+  const pesoTotal = fatias.reduce((sum, f) => sum + f.peso, 0);
+  let r = Math.random() * pesoTotal;
+  for (let i = 0; i < fatias.length; i++) {
+    r -= fatias[i].peso;
+    if (r <= 0) return i;
+  }
+  return fatias.length - 1;
+}
+
+function drawRouletteWheel() {
+  const canvas = document.getElementById('rouletteCanvas');
+  const ctx = canvas.getContext('2d');
+  const fatias = ADMIN_CONFIG.roleta.fatias;
+  const n = fatias.length;
+  const cx = 115, cy = 115, r = 110;
+  const cores = ['#e8342a', '#ff8c1a', '#f2c31a', '#2ecc71', '#22c5e8', '#b98cf2', '#e8342a', '#ff8c1a'];
+
+  ctx.clearRect(0, 0, 230, 230);
+  for (let i = 0; i < n; i++) {
+    const a0 = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const a1 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, a0, a1);
+    ctx.closePath();
+    ctx.fillStyle = cores[i % cores.length];
+    ctx.fill();
+    ctx.strokeStyle = '#0a0505';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate((a0 + a1) / 2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 10px Segoe UI, Arial, sans-serif';
+    ctx.fillText(fatias[i].label, r - 10, 4);
+    ctx.restore();
+  }
+}
+
+function renderRoulette() {
+  resetRoletaSeNecessario();
+  drawRouletteWheel();
+  const giroPorDia = ADMIN_CONFIG.roleta.giroPorDia;
+  const restantes = Math.max(0, giroPorDia - EventState.roletaGirosHoje);
+  document.getElementById('rouletteSpinsLeft').textContent = restantes + ' giro(s) restante(s) hoje';
+  const btn = document.getElementById('rouletteSpinBtn');
+  btn.disabled = restantes <= 0;
+  btn.textContent = restantes > 0 ? 'GIRAR' : 'SEM GIROS HOJE';
+}
+
+function resetRoletaSeNecessario() {
+  if (EventState.roletaUltimaData !== todayStr()) {
+    EventState.roletaUltimaData = todayStr();
+    EventState.roletaGirosHoje = 0;
+    saveEventState();
+  }
+}
+
+let rouletteSpinning = false;
+document.getElementById('rouletteSpinBtn').addEventListener('click', () => {
+  if (rouletteSpinning) return;
+  resetRoletaSeNecessario();
+  const giroPorDia = ADMIN_CONFIG.roleta.giroPorDia;
+  if (EventState.roletaGirosHoje >= giroPorDia) { toast('Sem giros disponíveis hoje'); return; }
+
+  rouletteSpinning = true;
+  const fatias = ADMIN_CONFIG.roleta.fatias;
+  const n = fatias.length;
+  const idx = sortearFatiaRoleta();
+
+  const canvas = document.getElementById('rouletteCanvas');
+  const anguloPorFatia = 360 / n;
+  // gira várias voltas + para exatamente no centro da fatia sorteada (aponta pra cima, onde está o ponteiro)
+  const anguloFinal = 360 * 5 + (360 - (idx * anguloPorFatia + anguloPorFatia / 2));
+  canvas.style.transition = 'transform 4s cubic-bezier(.17,.67,.16,1)';
+  canvas.style.transform = `rotate(${anguloFinal}deg)`;
+
+  setTimeout(() => {
+    const premio = fatias[idx];
+    State.coins += premio.moedas;
+    State.gems += premio.rubis;
+    saveCurrency();
+
+    EventState.roletaGirosHoje++;
+    saveEventState();
+
+    // BÔNUS RARO: 1% de chance, em CADA giro, de ganhar a nave GALÁXIA
+    // de graça — é o "1% pra raridade mais forte" que você pediu.
+    // É um sorteio separado do prêmio normal (não tira chance dos outros).
+    const GALAXIA_SHIP_ID = 'omega';
+    const ganhouGalaxia = Math.random() < 0.01 && !State.ownedShips.includes(GALAXIA_SHIP_ID);
+    if (ganhouGalaxia) {
+      State.ownedShips.push(GALAXIA_SHIP_ID);
+      saveShips();
+      toast(`🌌 RARÍSSIMO! Você ganhou a nave GALÁXIA (ÔMEGA)!`, 3400);
+    } else {
+      toast(`Você ganhou: ${premio.label}!`, 2400);
+    }
+
+    refreshEventosCurrency();
+    refreshMenuStats();
+    renderRoulette();
+
+    // reseta rotação visual sem animação pra próxima rodada não somar ângulos gigantes
+    setTimeout(() => {
+      canvas.style.transition = 'none';
+      canvas.style.transform = `rotate(${anguloFinal % 360}deg)`;
+    }, 50);
+
+    rouletteSpinning = false;
+  }, 4000);
+});
+
+/* ---------- CÓDIGOS DE RESGATE ---------- */
+document.getElementById('codeBtnResgatar').addEventListener('click', () => {
+  const input = document.getElementById('codeInput');
+  const val = input.value.trim().toUpperCase();
+  if (!val) return;
+
+  const cfg = ADMIN_CONFIG.codigos.find(c => c.codigo.toUpperCase() === val);
+  if (!cfg) { toast('Código inválido'); return; }
+  if (!cfg.ativo) { toast('Este código não está mais ativo'); return; }
+  if (cfg.validoAte) {
+    const limite = new Date(cfg.validoAte + 'T23:59:59');
+    if (new Date() > limite) { toast('Este código expirou'); return; }
+  }
+  if (EventState.codigosResgatados.includes(val)) { toast('Você já usou este código'); return; }
+
+  State.coins += cfg.recompensa.moedas || 0;
+  State.gems += cfg.recompensa.rubis || 0;
+  saveCurrency();
+
+  EventState.codigosResgatados.push(val);
+  saveEventState();
+
+  toast(`Código resgatado! +${formatNum(cfg.recompensa.moedas || 0)} moedas${cfg.recompensa.rubis ? ' e +' + cfg.recompensa.rubis + ' rubis' : ''}`);
+  input.value = '';
+  refreshEventosCurrency();
+  refreshMenuStats();
+});
+document.getElementById('lojaBackBtn').addEventListener('click', () => {
+  showScreen('menuScreen');
+  refreshMenuStats();
+});
+
+/* ============================================================
+   LOJA — NAVES
+   ============================================================ */
+function refreshLojaCurrency() {
+  document.getElementById('lojaCoinVal').textContent = '🪙 ' + formatNum(State.coins);
+  document.getElementById('lojaGemVal').textContent = '💎 ' + formatNum(State.gems);
+}
+
+function drawShipThumb(canvas, ship) {
+  const dpr = devicePixelRatio || 1;
+  const w = canvas.clientWidth || 120, h = canvas.clientHeight || 82;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.save();
+  ctx.translate(w / 2, h / 2 + 6);
+  drawShipShape(ctx, 58, Object.assign({ thrust: false }, ship.cores), ship.casco);
+  ctx.restore();
+}
+
+function renderLoja() {
+  refreshLojaCurrency();
+  const grid = document.getElementById('lojaPanelNaves');
+  grid.innerHTML = '';
+  SHIPS.forEach(ship => {
+    const owned = State.ownedShips.includes(ship.id);
+    const equipped = State.equippedShip === ship.id;
+    const card = document.createElement('div');
+    card.className = 'shipCard r-' + ship.raridade + (equipped ? ' equipped' : '');
+    card.innerHTML = `
+      ${equipped ? '<div class="shipCardBadge">EQUIPADA</div>' : ''}
+      <canvas class="shipCardCanvas"></canvas>
+      <div class="shipCardName">${ship.nome}</div>
+      <div class="invRarityTag">${RARITY_LABEL[ship.raridade]}</div>
+      <div class="shipCardDesc">${ship.tiroDesc}<br>${ship.habilidadeDesc}</div>
+    `;
+    const btn = document.createElement('button');
+    if (equipped) {
+      btn.className = 'shipCardBtn equipped';
+      btn.textContent = 'EQUIPADA';
+    } else if (owned) {
+      btn.className = 'shipCardBtn equip';
+      btn.textContent = 'EQUIPAR';
+      btn.addEventListener('click', () => equipShip(ship.id));
+    } else {
+      btn.className = 'shipCardBtn buy';
+      btn.textContent = ship.preco === 0 ? 'GRÁTIS' : '🪙 ' + formatNum(ship.preco);
+      btn.addEventListener('click', () => buyShip(ship.id));
+    }
+    card.appendChild(btn);
+    grid.appendChild(card);
+    drawShipThumb(card.querySelector('.shipCardCanvas'), ship);
+  });
+}
+
+function buyShip(id) {
+  const ship = getShipById(id);
+  if (State.ownedShips.includes(id)) return;
+  if (State.coins < ship.preco) { toast('Moedas insuficientes'); return; }
+  State.coins -= ship.preco;
+  State.ownedShips.push(id);
+  saveCurrency(); saveShips();
+  toast(ship.nome + ' adquirida!');
+  refreshMenuStats();
+  renderLoja();
+}
+
+function equipShip(id) {
+  if (!State.ownedShips.includes(id)) return;
+  State.equippedShip = id;
+  saveShips();
+  toast(getShipById(id).nome + ' equipada!');
+  renderLoja();
+}
+
+/* ============================================================
+   LOJA — NAVE LENDÁRIA ROTATIVA (troca a cada 1h, só com rubis)
+   ============================================================
+   Sem backend, "a mesma nave pra todo mundo na mesma hora" é feito
+   calculando um índice a partir do relógio UTC (todo aparelho com
+   hora certa cai no mesmo índice). Isso é local, não sincronizado
+   por servidor — ver conversa sobre limitações sem Supabase.
+   ============================================================ */
+
+// Pool de lendárias: reaproveita os cascos das naves normais com uma
+// paleta dourada/lendária própria, pra ficar visualmente único sem
+// precisar desenhar 10 silhuetas extras do zero.
+const LEGENDARY_POOL = [
+  { id: 'leg_fenix', nome: 'FÊNIX DOURADA', raridade: 'epico', casco: 'elegante', cores: { bodyColor:'#fff3d0', darkColor:'#7a5a10', accentColor:'#ffd23a', cockpitColor:'#ff8c1a' }, desc: 'Tiro perfurante duplo em chamas + cura em área a cada 5s' },
+  { id: 'leg_vortex', nome: 'VÓRTICE NEGRO', raridade: 'epico', casco: 'suprema', cores: { bodyColor:'#2a1030', darkColor:'#0a0510', accentColor:'#b98cf2', cockpitColor:'#e8342a' }, desc: 'Tiro em espiral + puxa inimigos próximos a cada 5s' },
+  { id: 'leg_aurora2', nome: 'AURORA BOREAL', raridade: 'epico', casco: 'dupla', cores: { bodyColor:'#d0fff0', darkColor:'#1a6a55', accentColor:'#2ecc71', cockpitColor:'#22c5e8' }, desc: 'Rajada tripla gelada + congela inimigos a cada 5s' },
+  { id: 'leg_solar', nome: 'IMPERADOR SOLAR', raridade: 'epico', casco: 'pesada', cores: { bodyColor:'#fff0d0', darkColor:'#8a5a10', accentColor:'#f2c31a', cockpitColor:'#ff8c1a' }, desc: 'Tiro solar de alto dano + explosão total a cada 5s' }
+];
+
+function getCurrentLegendary() {
+  const hourIndex = Math.floor(Date.now() / (ADMIN_CONFIG.lendarias.rotacaoHoras * 3600000));
+  return LEGENDARY_POOL[hourIndex % LEGENDARY_POOL.length];
+}
+
+function minutesUntilNextLegendary() {
+  const msPerCycle = ADMIN_CONFIG.lendarias.rotacaoHoras * 3600000;
+  const remaining = msPerCycle - (Date.now() % msPerCycle);
+  return Math.ceil(remaining / 60000);
+}
+
+function renderLegendaryPanel() {
+  const leg = getCurrentLegendary();
+  const owned = State.ownedShips.includes(leg.id);
+  const panel = document.getElementById('lojaPanelLendaria');
+  panel.innerHTML = `
+    <div class="legendaryTimer" id="legendaryTimerTxt">PRÓXIMA TROCA EM ${minutesUntilNextLegendary()} MIN</div>
+    <div class="legendaryCard">
+      <canvas id="legendaryCanvas" width="140" height="140"></canvas>
+      <div class="legendaryName">${leg.nome}</div>
+      <div class="legendaryDesc">${leg.desc}</div>
+      <div class="legendaryPrice">💎 ${formatNum(ADMIN_CONFIG.lendarias.precoRubis)}</div>
+      <button class="legendaryBuyBtn ${owned ? 'owned' : ''}" id="legendaryBuyBtn" ${owned ? 'disabled' : ''}>
+        ${owned ? 'JÁ ADQUIRIDA' : 'COMPRAR COM RUBIS'}
+      </button>
+    </div>
+  `;
+  const cv = document.getElementById('legendaryCanvas');
+  const ctx = cv.getContext('2d');
+  const dpr = devicePixelRatio || 1;
+  cv.width = 140 * dpr; cv.height = 140 * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.save();
+  ctx.translate(70, 76);
+  drawShipShape(ctx, 84, Object.assign({ thrust: false }, leg.cores), leg.casco);
+  ctx.restore();
+
+  if (!owned) {
+    document.getElementById('legendaryBuyBtn').addEventListener('click', () => buyLegendary(leg));
+  }
+}
+
+function buyLegendary(leg) {
+  if (State.ownedShips.includes(leg.id)) return;
+  const preco = ADMIN_CONFIG.lendarias.precoRubis;
+  if (State.gems < preco) { toast('Rubis insuficientes'); return; }
+  State.gems -= preco;
+  State.ownedShips.push(leg.id);
+  // registra a nave lendária na lista SHIPS em runtime pra poder ser equipada/jogada
+  if (!SHIPS.find(s => s.id === leg.id)) {
+    SHIPS.push(Object.assign({
+      preco: 0,
+      tiroDesc: leg.desc,
+      habilidadeDesc: leg.desc,
+      tiro(p) {
+        Game.bullets.push({ x: p.x - 8, y: p.y - 22, vy: -10.5, r: 4.4, dano: 2, perfura: true });
+        Game.bullets.push({ x: p.x + 8, y: p.y - 22, vy: -10.5, r: 4.4, dano: 2, perfura: true });
+      },
+      habilidade(p) {
+        Game.hp = Math.min(Game.maxHp, Game.hp + Game.maxHp * 0.1);
+        for (const e of Game.enemies) { const d = Math.hypot(e.x - p.x, e.y - p.y); if (d < 170) e.stun = 50; }
+        updateHUD();
+        spawnAbilityText(p, 'LENDÁRIA!');
+      }
+    }, leg));
+  }
+  saveCurrency(); saveShips();
+  toast(leg.nome + ' adquirida!');
+  refreshMenuStats();
+  renderLegendaryPanel();
+}
+
+/* abas da loja */
+document.getElementById('tabNaves').addEventListener('click', () => {
+  document.getElementById('tabNaves').classList.add('active');
+  document.getElementById('tabLendaria').classList.remove('active');
+  document.getElementById('lojaPanelNaves').style.display = 'grid';
+  document.getElementById('lojaPanelLendaria').style.display = 'none';
+});
+document.getElementById('tabLendaria').addEventListener('click', () => {
+  document.getElementById('tabLendaria').classList.add('active');
+  document.getElementById('tabNaves').classList.remove('active');
+  document.getElementById('lojaPanelNaves').style.display = 'none';
+  document.getElementById('lojaPanelLendaria').style.display = 'flex';
+  renderLegendaryPanel();
+});
+
+document.getElementById('modeClassic').addEventListener('click', () => {
+  document.getElementById('modeModal').classList.remove('active');
+  startGame(!!State.savedRun);
+});
+
+/* ============================================================
+   GAMEPLAY - MODO CLASSICO
+   ============================================================ */
+const gameCanvas = document.getElementById('gameCanvas');
+const gctx = gameCanvas.getContext('2d');
+let GW = 0, GH = 0;
+
+function resizeGame() {
+  GW = gameCanvas.clientWidth;
+  GH = gameCanvas.clientHeight;
+  gameCanvas.width = GW * devicePixelRatio;
+  gameCanvas.height = GH * devicePixelRatio;
+  gctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+window.addEventListener('resize', () => { if (Game.running) resizeGame(); });
+
+const MAX_LEVEL = 25;
+const BOSS_LEVELS = [10, 20, 25];
+
+const Game = {
+  running: false,
+  paused: false,
+  level: 1,
+  score: 0,
+  hp: 100,
+  maxHp: 100,
+  player: null,
+  bullets: [],
+  enemyBullets: [],
+  enemies: [],
+  particles: [],
+  drops: [],
+  missiles: [],
+  boss: null,
+  spawnTimer: 0,
+  enemiesToSpawnThisLevel: 0,
+  enemiesToKillThisLevel: 0,
+  enemiesSpawned: 0,
+  enemiesKilled: 0,
+  levelComplete: false,
+  levelTransitionTimer: 0,
+  missilePowerTimer: 0,
+  lastFrameTime: 0,
+  invuln: 0,
+  reviveCount: 0,
+  input: { x: null, y: null, active: false },
+  coinCombo: 0, coinComboTimer: 0, coinComboSum: 0,
+  gemCombo: 0, gemComboTimer: 0, gemComboSum: 0
+};
+
+function levelEnemyCount(lvl) {
+  return 8 + Math.floor(lvl * 1.6);
+}
+function levelEnemySpeed(lvl) {
+  return 1.1 + lvl * 0.05;
+}
+function levelSpawnInterval(lvl) {
+  return Math.max(35, 90 - lvl * 2.2);
+}
+
+function isBossLevel(lvl) { return BOSS_LEVELS.includes(lvl); }
+
+/* ---------- ENEMY TYPES ---------- */
+function makeEnemyType(lvl) {
+  const pool = ['grunt'];
+  if (lvl >= 3) pool.push('zigzag');
+  if (lvl >= 5) pool.push('sniper');
+  if (lvl >= 7) pool.push('tank');
+  if (lvl >= 9) pool.push('swarm');
+  if (lvl >= 12) pool.push('splitter');
+  if (lvl >= 15) pool.push('shielded');
+  if (lvl >= 18) pool.push('bomber');
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function spawnEnemy() {
+  const lvl = Game.level;
+  const type = makeEnemyType(lvl);
+  const baseHp = 1 + Math.floor(lvl / 4) + Math.floor(Math.pow(lvl, 1.4) / 18);
+  let e = {
+    type, x: Math.random() * (GW - 60) + 30, y: -30,
+    vx: 0, vy: levelEnemySpeed(lvl),
+    hp: baseHp, maxHp: baseHp, r: 16,
+    shootTimer: Math.random() * 60 + 40,
+    phase: Math.random() * Math.PI * 2,
+    color: '#c0392b'
+  };
+  switch (type) {
+    case 'grunt':
+      e.color = '#e74c3c'; e.r = 15;
+      break;
+    case 'zigzag':
+      e.color = '#e67e22'; e.r = 14; e.amp = 60 + Math.random() * 40;
+      break;
+    case 'sniper':
+      e.color = '#8e44ad'; e.r = 15; e.vy *= 0.6; e.shootTimer = 50;
+      break;
+    case 'tank':
+      e.hp = baseHp * 3; e.maxHp = e.hp; e.color = '#7f8c8d'; e.r = 22; e.vy *= 0.55;
+      break;
+    case 'swarm':
+      e.hp = Math.max(1, Math.floor(baseHp * 0.6)); e.maxHp = e.hp; e.color = '#16a085'; e.r = 11; e.vy *= 1.3;
+      break;
+    case 'splitter':
+      e.color = '#d4a017'; e.r = 19; e.hp = baseHp + 1; e.maxHp = e.hp; e.vy *= 0.9;
+      break;
+    case 'shielded':
+      e.color = '#4a6fa5'; e.r = 18; e.hp = baseHp + 2; e.maxHp = e.hp; e.vy *= 0.7; e.shielded = true;
+      break;
+    case 'bomber':
+      e.color = '#ff3355'; e.r = 17; e.hp = Math.max(1, Math.floor(baseHp * 0.8)); e.maxHp = e.hp; e.vy *= 1.15; e.diving = false;
+      break;
+  }
+  Game.enemies.push(e);
+}
+
+function spawnBoss(lvl) {
+  const idx = BOSS_LEVELS.indexOf(lvl);
+  const tier = idx + 1;
+  const baseHp = tier === 1 ? 140 : tier === 2 ? 340 : 620;
+  Game.boss = {
+    x: GW / 2, y: -80, targetY: 90,
+    vx: 2.2 + tier * 0.5,
+    hp: baseHp, maxHp: baseHp,
+    r: 46 + tier * 8,
+    shootTimer: Math.max(28, 70 - tier * 14),
+    phase: 0,
+    entering: true,
+    tier,
+    name: tier === 1 ? 'GUARDIAO ORBITAL' : tier === 2 ? 'DESTRUIDOR ESTELAR' : 'IMPERADOR DO VAZIO'
+  };
+  document.getElementById('bossBarWrap').classList.add('show');
+  document.getElementById('bossName').textContent = Game.boss.name;
+}
+
+/* ---------- PLAYER ---------- */
+function initPlayer() {
+  Game.player = {
+    x: GW / 2, y: GH - 120, r: 20,
+    shootTimer: 0,
+    abilityTimer: SHIP_ABILITY_COOLDOWN
+  };
+  Game.shieldCharges = 0;
+}
+
+/* ---------- POWER-UPS: HOMING MISSILE ---------- */
+function maybeSpawnPowerDrop(x, y) {
+  const r = Math.random();
+  if (r < 0.045) {
+    Game.drops.push({ x, y, type: 'missile', vy: 1.4, r: 12, phase: 0 });
+  }
+}
+
+/* ---------- START / RESET GAME ---------- */
+function startGame(fromSaved) {
+  showScreen('gameScreen');
+  resizeGame();
+  Game.running = true;
+  Game.paused = false;
+  Game.bullets = []; Game.enemyBullets = []; Game.enemies = [];
+  Game.particles = []; Game.drops = []; Game.missiles = [];
+  Game.boss = null;
+  Game.score = fromSaved && State.savedRun ? State.savedRun.score : 0;
+  Game.level = fromSaved && State.savedRun ? State.savedRun.level : 1;
+  Game.hp = Game.maxHp;
+  Game.enemiesSpawned = 0;
+  Game.enemiesKilled = 0;
+  Game.enemiesToSpawnThisLevel = levelEnemyCount(Game.level);
+  Game.enemiesToKillThisLevel = Game.enemiesToSpawnThisLevel;
+  Game.levelComplete = false;
+  Game.spawnTimer = 0;
+  Game.missilePowerTimer = 0;
+  Game.invuln = 90;
+  Game.reviveCount = 0;
+  document.getElementById('bossBarWrap').classList.remove('show');
+  initPlayer();
+  updateHUD();
+  Game.lastFrameTime = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function saveProgress() {
+  DB.set('savedRun', { level: Game.level, score: Game.score });
+}
+function clearSavedProgress() {
+  DB.set('savedRun', null);
+  State.savedRun = null;
+}
+
+/* ---------- HUD ---------- */
+function updateHUD() {
+  document.getElementById('hudLevel').textContent = 'NIVEL ' + Game.level;
+  document.getElementById('hudScore').textContent = formatNum(Game.score);
+  document.getElementById('hudCoins').textContent = formatNum(State.coins);
+  document.getElementById('hudGems').textContent = formatNum(State.gems);
+  const pct = Math.max(0, Game.hp / Game.maxHp) * 100;
+  const fill = document.getElementById('hpBarFill');
+  fill.style.width = pct + '%';
+  fill.classList.remove('mid', 'low');
+  if (pct <= 25) fill.classList.add('low');
+  else if (pct <= 55) fill.classList.add('mid');
+  document.getElementById('hpBarText').textContent = Math.ceil(Game.hp);
+}
+
+/* ---------- INPUT (drag to move) ---------- */
+function pointerPos(e) {
+  const rect = gameCanvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+  return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+}
+gameCanvas.addEventListener('pointerdown', e => {
+  if (Game.paused) return;
+  const p = pointerPos(e);
+  Game.input.active = true; Game.input.x = p.x; Game.input.y = p.y;
+});
+gameCanvas.addEventListener('pointermove', e => {
+  if (!Game.input.active || Game.paused) return;
+  const p = pointerPos(e);
+  Game.input.x = p.x; Game.input.y = p.y;
+});
+window.addEventListener('pointerup', () => { Game.input.active = false; });
+
+/* ---------- PAUSE ---------- */
+document.getElementById('pauseBtn').addEventListener('click', () => {
+  if (!Game.running || Game.paused) return;
+  Game.paused = true;
+  saveProgress();
+  document.getElementById('pauseModal').classList.add('show');
+});
+document.getElementById('resumeBtn').addEventListener('click', () => {
+  Game.paused = false;
+  document.getElementById('pauseModal').classList.remove('show');
+  Game.lastFrameTime = performance.now();
+  requestAnimationFrame(gameLoop);
+});
+document.getElementById('exitToMenuBtn').addEventListener('click', () => {
+  saveProgress();
+  Game.running = false;
+  Game.paused = false;
+  document.getElementById('pauseModal').classList.remove('show');
+  refreshMenuStats();
+  showScreen('menuScreen');
+});
+
+/* ---------- DEATH / REVIVE ---------- */
+function reviveCost() {
+  const base = { coin: 50, gem: 10 };
+  const mult = Math.pow(2, Game.reviveCount);
+  return { coin: base.coin * mult, gem: base.gem * mult };
+}
+
+function showDeathModal() {
+  Game.paused = true;
+  document.getElementById('deathLevel').textContent = Game.level;
+  document.getElementById('deathScore').textContent = formatNum(Game.score);
+  const cost = reviveCost();
+  const canRevive = Game.reviveCount < 2;
+  const coinBtn = document.getElementById('reviveCoinBtn');
+  const gemBtn = document.getElementById('reviveGemBtn');
+  document.getElementById('reviveCoinCost').textContent = formatNum(cost.coin);
+  document.getElementById('reviveGemCost').textContent = formatNum(cost.gem);
+  coinBtn.style.display = canRevive ? 'block' : 'none';
+  gemBtn.style.display = canRevive ? 'block' : 'none';
+  document.getElementById('deathTitle').textContent = 'VOCE MORREU';
+  document.getElementById('deathModal').classList.add('show');
+}
+
+document.getElementById('reviveCoinBtn').addEventListener('click', () => {
+  const cost = reviveCost();
+  if (State.coins < cost.coin) { toast('Moedas insuficientes'); return; }
+  State.coins -= cost.coin; saveCurrency();
+  Game.reviveCount++;
+  reviveContinue();
+});
+document.getElementById('reviveGemBtn').addEventListener('click', () => {
+  const cost = reviveCost();
+  if (State.gems < cost.gem) { toast('Diamantes insuficientes'); return; }
+  State.gems -= cost.gem; saveCurrency();
+  Game.reviveCount++;
+  reviveContinue();
+});
+document.getElementById('giveUpBtn').addEventListener('click', () => {
+  document.getElementById('deathModal').classList.remove('show');
+  clearSavedProgress();
+  Game.running = false;
+  refreshMenuStats();
+  showScreen('menuScreen');
+});
+
+function reviveContinue() {
+  document.getElementById('deathModal').classList.remove('show');
+  Game.hp = Game.maxHp;
+  Game.paused = false;
+  Game.invuln = 90;
+  Game.player.x = GW / 2; Game.player.y = GH - 120;
+  updateHUD();
+  Game.lastFrameTime = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function playerDies() {
+  clearSavedProgress();
+  showDeathModal();
+  SFX.gameOver();
+}
+
+/* ============================================================
+   UPDATE
+   ============================================================ */
+function updatePlayer() {
+  const p = Game.player;
+  const ship = getShipById(State.equippedShip);
+  const shootInterval = Math.round(16 * (ship.fireRateMod || 1));
+
+  if (Game.input.active && Game.input.x !== null) {
+    const tx = Game.input.x, ty = Game.input.y;
+    p.x += (tx - p.x) * 0.25;
+    p.y += (ty - p.y) * 0.25;
+  }
+  p.x = Math.max(24, Math.min(GW - 24, p.x));
+  p.y = Math.max(60, Math.min(GH - 40, p.y));
+
+  p.shootTimer--;
+  if (p.shootTimer <= 0) {
+    p.shootTimer = shootInterval;
+    ship.tiro(p);
+    SFX.shoot();
+  }
+
+  p.abilityTimer--;
+  if (p.abilityTimer <= 0) {
+    p.abilityTimer = SHIP_ABILITY_COOLDOWN;
+    ship.habilidade(p);
+  }
+
+  if (Game.missilePowerTimer > 0) {
+    Game.missilePowerTimer--;
+    if (Game.missilePowerTimer % 14 === 0) {
+      Game.missiles.push({ x: p.x, y: p.y - 20, vy: -6, r: 5, target: null, life: 240 });
+    }
+  }
+
+  if (Game.invuln > 0) Game.invuln--;
+}
+
+function nearestEnemyTo(x, y) {
+  let best = null, bd = Infinity;
+  for (const e of Game.enemies) {
+    const d = (e.x - x) ** 2 + (e.y - y) ** 2;
+    if (d < bd) { bd = d; best = e; }
+  }
+  if (Game.boss) {
+    const d = (Game.boss.x - x) ** 2 + (Game.boss.y - y) ** 2;
+    if (d < bd) best = Game.boss;
+  }
+  return best;
+}
+
+function updateBullets() {
+  Game.bullets = Game.bullets.filter(b => { b.y += b.vy; return b.y > -20; });
+
+  Game.missiles = Game.missiles.filter(m => {
+    m.life--;
+    if (!m.target || m.target.hp <= 0) m.target = nearestEnemyTo(m.x, m.y);
+    if (m.target) {
+      const dx = m.target.x - m.x, dy = m.target.y - m.y;
+      const d = Math.hypot(dx, dy) || 1;
+      m.vx = (dx / d) * 7;
+      m.vy = (dy / d) * 7;
+    } else {
+      m.vy = -7; m.vx = 0;
+    }
+    m.x += m.vx || 0; m.y += m.vy;
+    return m.life > 0 && m.y > -30 && m.y < GH + 30;
+  });
+
+  Game.enemyBullets = Game.enemyBullets.filter(b => {
+    b.x += b.vx; b.y += b.vy;
+    return b.y < GH + 20 && b.y > -20 && b.x > -20 && b.x < GW + 20;
+  });
+}
+
+function updateEnemies() {
+  const lvl = Game.level;
+  for (const e of Game.enemies) {
+    if (e.stun > 0) { e.stun--; continue; } // atordoado: não se move nem atira neste frame
+    const slowFactor = (e.slowT > 0) ? 0.35 : 1;
+    if (e.slowT > 0) e.slowT--;
+
+    e.phase += 0.05 * slowFactor;
+    if (e.type === 'zigzag') {
+      e.x += Math.sin(e.phase) * 2.2 * slowFactor;
+    } else if (e.type === 'swarm') {
+      e.x += Math.sin(e.phase * 1.5) * 1.6 * slowFactor;
+    } else if (e.type === 'bomber') {
+      const dist = Math.hypot(Game.player.x - e.x, Game.player.y - e.y);
+      if (!e.diving && dist < 220 && e.y > 40) {
+        e.diving = true;
+      }
+      if (e.diving) {
+        const dx = Game.player.x - e.x, dy = Game.player.y - e.y;
+        const d = Math.hypot(dx, dy) || 1;
+        e.vx = (dx / d) * 3.6 * slowFactor;
+        e.x += e.vx;
+        e.vy = Math.abs(e.vy) * 1.8;
+      }
+    }
+    e.y += e.vy * slowFactor;
+
+    e.shootTimer--;
+    if (e.shootTimer <= 0 && e.y > 0 && e.y < GH * 0.75) {
+      e.shootTimer = e.type === 'sniper' ? 65 : 90 + Math.random() * 40;
+      const dx = Game.player.x - e.x, dy = Game.player.y - e.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const spd = (e.type === 'sniper' ? 5.2 : 3.4) * slowFactor;
+      Game.enemyBullets.push({ x: e.x, y: e.y, vx: (dx / d) * spd, vy: (dy / d) * spd, r: 4, color: e.color });
+    }
+  }
+  Game.enemies = Game.enemies.filter(e => e.y < GH + 40 && e.hp > 0);
+
+  if (Game.boss) {
+    const b = Game.boss;
+    if (b.entering) {
+      b.y += 1.6;
+      if (b.y >= b.targetY) { b.entering = false; b.y = b.targetY; }
+    } else {
+      b.phase += 0.02;
+      b.x += b.vx;
+      if (b.x < b.r + 20 || b.x > GW - b.r - 20) b.vx *= -1;
+      b.shootTimer--;
+      if (b.shootTimer <= 0) {
+        b.shootTimer = 42;
+        const spread = 5;
+        for (let i = -Math.floor(spread / 2); i <= Math.floor(spread / 2); i++) {
+          const ang = Math.atan2(Game.player.y - b.y, Game.player.x - b.x) + i * 0.18;
+          Game.enemyBullets.push({ x: b.x, y: b.y + b.r * 0.4, vx: Math.cos(ang) * 4, vy: Math.sin(ang) * 4, r: 5, color: '#ff4444' });
+        }
+      }
+    }
+  }
+}
+
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const spd = Math.random() * 3 + 1;
+    Game.particles.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, life: 26, maxLife: 26, color });
+  }
+}
+
+function updateParticles() {
+  Game.particles = Game.particles.filter(p => {
+    p.x += p.vx; p.y += p.vy; p.vx *= 0.94; p.vy *= 0.94; p.life--;
+    return p.life > 0;
+  });
+}
+
+function updateDrops() {
+  if (Game.coinComboTimer > 0 && --Game.coinComboTimer === 0) { Game.coinCombo = 0; Game.coinComboSum = 0; }
+  if (Game.gemComboTimer > 0 && --Game.gemComboTimer === 0) { Game.gemCombo = 0; Game.gemComboSum = 0; }
+  Game.drops = Game.drops.filter(d => {
+    d.y += d.vy; d.phase += 0.1;
+    const p = Game.player;
+    const dist = Math.hypot(d.x - p.x, d.y - p.y);
+    if (dist < 30) {
+      collectDrop(d);
+      return false;
+    }
+    return d.y < GH + 30;
+  });
+}
+
+function collectDrop(d) {
+  if (d.type === 'coin') {
+    State.coins += d.value; saveCurrency(); refreshMenuStats();
+    document.getElementById('hudCoins').textContent = formatNum(State.coins);
+    Game.coinCombo++; Game.coinComboSum += d.value; Game.coinComboTimer = 26;
+    SFX.coin(Game.coinCombo);
+    spawnFloatText(d.x, d.y, '+' + d.value, '#f2c31a');
+  }
+  else if (d.type === 'gem') {
+    State.gems += d.value; saveCurrency(); refreshMenuStats();
+    document.getElementById('hudGems').textContent = formatNum(State.gems);
+    Game.gemCombo++; Game.gemComboSum += d.value; Game.gemComboTimer = 26;
+    SFX.gem();
+    spawnFloatText(d.x, d.y, '+' + d.value, '#b98cf2');
+  }
+  else if (d.type === 'missile') { Game.missilePowerTimer = 420; toast('Míssel Teleguiado ativado!'); SFX.powerup(); }
+}
+
+/* ---------- FLOATING PICKUP TEXT (agrupado, some rápido) ---------- */
+function spawnFloatText(x, y, text, color) {
+  Game.particles.push({ x, y, vx: 0, vy: -1.1, life: 34, maxLife: 34, color, isText: true, text });
+}
+
+function dropLoot(x, y, isBoss) {
+  const coinChance = isBoss ? 1 : 0.55;
+  if (Math.random() < coinChance) {
+    Game.drops.push({ x, y, type: 'coin', value: isBoss ? (20 + Game.level * 3) : (1 + Math.floor(Game.level / 3)), vy: 1.6, r: 9, phase: 0 });
+  }
+  const gemChance = isBoss ? 0.35 : 0.01;
+  if (Math.random() < gemChance) {
+    Game.drops.push({ x: x + 14, y, type: 'gem', value: isBoss ? 5 : 1, vy: 1.6, r: 9, phase: 0 });
+  }
+  maybeSpawnPowerDrop(x - 14, y);
+}
+
+function killEnemy(e) {
+  Game.score += 10 + Game.level;
+  Game.enemiesKilled++;
+  spawnParticles(e.x, e.y, e.color, 14);
+  dropLoot(e.x, e.y, false);
+  SFX.explosion();
+  if (e.type === 'splitter' && !e._split) {
+    for (let i = -1; i <= 1; i += 2) {
+      const mini = {
+        type: 'grunt', x: e.x + i * 18, y: e.y, vx: 0, vy: levelEnemySpeed(Game.level) * 1.2,
+        hp: 1, maxHp: 1, r: 9, shootTimer: 999, phase: Math.random() * Math.PI * 2,
+        color: '#e8b84a', _split: true
+      };
+      Game.enemies.push(mini);
+      Game.enemiesToKillThisLevel++; // só o alvo de kills cresce; alvo de spawn natural fica intacto
+    }
+  }
+}
+
+function checkCollisions() {
+  const p = Game.player;
+
+  // player bullets vs enemies
+  for (const b of Game.bullets) {
+    for (const e of Game.enemies) {
+      if (e.hp <= 0) continue;
+      if (b._used && !b.perfura) continue;
+      if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + b.r) {
+        if (e.shielded && b.y > e.y) { if (!b.perfura) b.y = -999; continue; } // escudo frontal bloqueia tiro vindo de baixo
+        e.hp -= (b.dano || 1); b._used = true;
+        if (!b.perfura) b.y = -999;
+        if (e.hp <= 0) killEnemy(e);
+      }
+    }
+    if (Game.boss && Game.boss.hp > 0 && (!b._used || b.perfura)) {
+      const bo = Game.boss;
+      if (Math.hypot(b.x - bo.x, b.y - bo.y) < bo.r + b.r) {
+        bo.hp -= (b.dano || 1); b._used = true;
+        if (!b.perfura) b.y = -999;
+        updateBossBar();
+        SFX.bossHit();
+        if (bo.hp <= 0) killBoss();
+      }
+    }
+  }
+  Game.bullets = Game.bullets.filter(b => b.y > -900);
+
+  // missiles vs enemies/boss
+  for (const m of Game.missiles) {
+    for (const e of Game.enemies) {
+      if (e.hp <= 0) continue;
+      if (Math.hypot(m.x - e.x, m.y - e.y) < e.r + m.r) {
+        e.hp -= 3; m.life = 0;
+        if (e.hp <= 0) killEnemy(e);
+      }
+    }
+    if (Game.boss && Game.boss.hp > 0) {
+      const bo = Game.boss;
+      if (Math.hypot(m.x - bo.x, m.y - bo.y) < bo.r + m.r) {
+        bo.hp -= 3; m.life = 0;
+        updateBossBar();
+        SFX.bossHit();
+        if (bo.hp <= 0) killBoss();
+      }
+    }
+  }
+
+  if (Game.invuln <= 0) {
+    // enemy bullets vs player
+    for (const eb of Game.enemyBullets) {
+      if (Math.hypot(eb.x - p.x, eb.y - p.y) < p.r * 0.6 + eb.r) {
+        hitPlayer(10);
+        eb.y = -9999;
+        break;
+      }
+    }
+    // enemies body vs player
+    for (const e of Game.enemies) {
+      if (Math.hypot(e.x - p.x, e.y - p.y) < p.r * 0.6 + e.r) {
+        hitPlayer(18);
+        e.hp = 0;
+        break;
+      }
+    }
+  }
+}
+
+function updateBossBar() {
+  const pct = Math.max(0, Game.boss.hp / Game.boss.maxHp) * 100;
+  document.getElementById('bossBarFill').style.width = pct + '%';
+}
+
+function killBoss() {
+  spawnParticles(Game.boss.x, Game.boss.y, '#ff5a3a', 40);
+  Game.score += 200 + Game.level * 10;
+  dropLoot(Game.boss.x, Game.boss.y, true);
+  Game.boss = null;
+  document.getElementById('bossBarWrap').classList.remove('show');
+  SFX.explosion();
+  advanceLevel();
+}
+
+function hitPlayer(amount) {
+  if (Game.shieldCharges > 0) {
+    Game.shieldCharges--;
+    Game.invuln = 30;
+    spawnParticles(Game.player.x, Game.player.y, '#22c5e8', 10);
+    toast('Escudo absorveu o golpe!', 1000);
+    return;
+  }
+  const dmg = (amount || 12) * (1 + Game.level * 0.015);
+  Game.hp = Math.max(0, Game.hp - dmg);
+  Game.invuln = 55;
+  spawnParticles(Game.player.x, Game.player.y, '#22c5e8', 16);
+  updateHUD();
+  SFX.hit();
+  if (Game.hp <= 0) {
+    playerDies();
+  }
+}
+
+function advanceLevel() {
+  Game.level++;
+  if (Game.level > MAX_LEVEL) {
+    Game.level = MAX_LEVEL;
+    toast('Você completou todos os níveis disponíveis!');
+    Game.paused = true;
+    clearSavedProgress();
+    document.getElementById('deathTitle').textContent = 'VITÓRIA!';
+    document.getElementById('deathLevel').textContent = Game.level;
+    document.getElementById('deathScore').textContent = formatNum(Game.score);
+    document.getElementById('reviveCoinBtn').style.display = 'none';
+    document.getElementById('reviveGemBtn').style.display = 'none';
+    document.getElementById('deathModal').classList.add('show');
+    return;
+  }
+  Game.enemiesSpawned = 0;
+  Game.enemiesKilled = 0;
+  Game.enemiesToSpawnThisLevel = levelEnemyCount(Game.level);
+  Game.enemiesToKillThisLevel = Game.enemiesToSpawnThisLevel;
+  Game.enemies = [];
+  Game.enemyBullets = [];
+  saveProgress();
+  updateHUD();
+  toast('NÍVEL ' + Game.level);
+  SFX.levelUp();
+}
+
+function updateSpawning() {
+  if (Game.boss) return;
+  if (isBossLevel(Game.level) && Game.enemiesKilled >= Game.enemiesToKillThisLevel && !Game.boss) {
+    if (Game.enemies.length === 0) spawnBoss(Game.level);
+    return;
+  }
+  if (Game.enemiesSpawned >= Game.enemiesToSpawnThisLevel) {
+    if (Game.enemiesKilled >= Game.enemiesToKillThisLevel && !isBossLevel(Game.level)) {
+      advanceLevel();
+    }
+    return;
+  }
+  Game.spawnTimer--;
+  if (Game.spawnTimer <= 0) {
+    Game.spawnTimer = levelSpawnInterval(Game.level);
+    spawnEnemy();
+    Game.enemiesSpawned++;
+  }
+}
+
+/* ============================================================
+   DRAW
+   ============================================================ */
+function drawStarfieldGame() {
+  gctx.fillStyle = '#050202';
+  gctx.fillRect(0, 0, GW, GH);
+}
+
+function drawPlayer() {
+  const p = Game.player;
+  if (Game.invuln > 0 && Math.floor(Game.invuln / 6) % 2 === 0) return;
+  const ship = getShipById(State.equippedShip);
+  gctx.save();
+  gctx.translate(p.x, p.y);
+  drawShipShape(gctx, 46, ship.cores, ship.casco);
+  gctx.restore();
+}
+
+function drawEnemy(e) {
+  gctx.save();
+  gctx.translate(e.x, e.y);
+  gctx.rotate(Math.PI);
+  const grad = gctx.createLinearGradient(0, -e.r, 0, e.r);
+  grad.addColorStop(0, e.color);
+  grad.addColorStop(1, '#20090a');
+  gctx.beginPath();
+  gctx.moveTo(0, -e.r);
+  gctx.lineTo(e.r * 0.8, e.r * 0.6);
+  gctx.lineTo(0, e.r * 0.3);
+  gctx.lineTo(-e.r * 0.8, e.r * 0.6);
+  gctx.closePath();
+  gctx.fillStyle = grad;
+  gctx.fill();
+  gctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  gctx.lineWidth = 1.5;
+  gctx.stroke();
+  gctx.beginPath();
+  gctx.arc(0, -e.r * 0.15, e.r * 0.22, 0, Math.PI * 2);
+  gctx.fillStyle = '#fff';
+  gctx.globalAlpha = 0.7;
+  gctx.fill();
+  gctx.globalAlpha = 1;
+  gctx.restore();
+
+  // indicadores visuais especiais por tipo
+  if (e.shielded) {
+    gctx.save();
+    gctx.beginPath();
+    gctx.arc(e.x, e.y - e.r * 0.1, e.r * 1.15, Math.PI * 0.15, Math.PI * 0.85);
+    gctx.strokeStyle = 'rgba(120,180,255,0.8)';
+    gctx.lineWidth = 3;
+    gctx.stroke();
+    gctx.restore();
+  }
+  if (e.type === 'splitter') {
+    gctx.save();
+    gctx.globalAlpha = 0.5 + Math.sin(e.phase * 3) * 0.3;
+    gctx.beginPath();
+    gctx.arc(e.x, e.y, e.r * 1.25, 0, Math.PI * 2);
+    gctx.strokeStyle = '#ffe680';
+    gctx.lineWidth = 2;
+    gctx.stroke();
+    gctx.restore();
+  }
+  if (e.type === 'bomber' && e.diving) {
+    gctx.save();
+    gctx.globalAlpha = 0.6;
+    gctx.beginPath();
+    gctx.arc(e.x, e.y - e.r * 1.3, e.r * 0.5, 0, Math.PI * 2);
+    gctx.fillStyle = '#ff8844';
+    gctx.fill();
+    gctx.restore();
+  }
+
+  if (e.maxHp > 1) {
+    const w = e.r * 1.6;
+    gctx.fillStyle = 'rgba(0,0,0,0.5)';
+    gctx.fillRect(e.x - w / 2, e.y - e.r - 10, w, 4);
+    gctx.fillStyle = '#e74c3c';
+    gctx.fillRect(e.x - w / 2, e.y - e.r - 10, w * (e.hp / e.maxHp), 4);
+  }
+}
+
+function drawBoss() {
+  const b = Game.boss;
+  if (!b) return;
+  gctx.save();
+  gctx.translate(b.x, b.y);
+  gctx.rotate(Math.PI + Math.sin(b.phase) * 0.04);
+  const grad = gctx.createLinearGradient(0, -b.r, 0, b.r);
+  grad.addColorStop(0, '#5a1010');
+  grad.addColorStop(1, '#1a0505');
+  gctx.beginPath();
+  gctx.moveTo(0, -b.r);
+  gctx.lineTo(b.r * 0.7, -b.r * 0.2);
+  gctx.lineTo(b.r, b.r * 0.5);
+  gctx.lineTo(b.r * 0.35, b.r * 0.3);
+  gctx.lineTo(0, b.r * 0.7);
+  gctx.lineTo(-b.r * 0.35, b.r * 0.3);
+  gctx.lineTo(-b.r, b.r * 0.5);
+  gctx.lineTo(-b.r * 0.7, -b.r * 0.2);
+  gctx.closePath();
+  gctx.fillStyle = grad;
+  gctx.fill();
+  gctx.strokeStyle = '#ff5a3a';
+  gctx.lineWidth = 2;
+  gctx.stroke();
+  gctx.beginPath();
+  gctx.arc(0, -b.r * 0.1, b.r * 0.25, 0, Math.PI * 2);
+  gctx.fillStyle = '#ffae42';
+  gctx.globalAlpha = 0.8;
+  gctx.fill();
+  gctx.globalAlpha = 1;
+  gctx.restore();
+}
+
+function drawBullets() {
+  gctx.fillStyle = '#22c5e8';
+  for (const b of Game.bullets) {
+    gctx.beginPath();
+    gctx.ellipse(b.x, b.y, b.r * 0.6, b.r * 1.4, 0, 0, Math.PI * 2);
+    gctx.fill();
+  }
+  for (const eb of Game.enemyBullets) {
+    gctx.beginPath();
+    gctx.arc(eb.x, eb.y, eb.r, 0, Math.PI * 2);
+    gctx.fillStyle = eb.color || '#e74c3c';
+    gctx.fill();
+  }
+  for (const m of Game.missiles) {
+    gctx.save();
+    gctx.translate(m.x, m.y);
+    const ang = Math.atan2(m.vy || -1, m.vx || 0);
+    gctx.rotate(ang + Math.PI / 2);
+    gctx.fillStyle = '#333';
+    gctx.fillRect(-3, -8, 6, 16);
+    gctx.fillStyle = '#f2c31a';
+    gctx.beginPath();
+    gctx.moveTo(0, -12); gctx.lineTo(4, -4); gctx.lineTo(-4, -4);
+    gctx.closePath(); gctx.fill();
+    gctx.restore();
+  }
+}
+
+function drawParticles() {
+  for (const p of Game.particles) {
+    gctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    gctx.fillStyle = p.color;
+    if (p.isText) {
+      gctx.font = '700 13px Segoe UI, Arial, sans-serif';
+      gctx.textAlign = 'center';
+      gctx.fillText(p.text, p.x, p.y);
+    } else {
+      gctx.beginPath();
+      gctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
+      gctx.fill();
+    }
+  }
+  gctx.globalAlpha = 1;
+}
+
+function drawDrops() {
+  for (const d of Game.drops) {
+    const bob = Math.sin(d.phase) * 3;
+    if (d.type === 'coin') {
+      gctx.save();
+      gctx.translate(d.x, d.y + bob);
+      drawCoinShape(gctx, 9);
+      gctx.restore();
+    } else if (d.type === 'gem') {
+      gctx.save();
+      gctx.translate(d.x, d.y + bob);
+      drawGemShape(gctx, 9);
+      gctx.restore();
+    } else if (d.type === 'missile') {
+      gctx.save();
+      gctx.translate(d.x, d.y + bob);
+      gctx.fillStyle = '#222';
+      gctx.beginPath();
+      gctx.arc(0, 0, 11, 0, Math.PI * 2);
+      gctx.fill();
+      gctx.strokeStyle = '#f2c31a'; gctx.lineWidth = 1.5; gctx.stroke();
+      gctx.fillStyle = '#f2c31a';
+      gctx.beginPath();
+      gctx.moveTo(0, -6); gctx.lineTo(4, 3); gctx.lineTo(-4, 3);
+      gctx.closePath(); gctx.fill();
+      gctx.restore();
+    }
+  }
+}
+
+function draw() {
+  drawStarfieldGame();
+  drawDrops();
+  drawEnemy._noop = 0;
+  for (const e of Game.enemies) drawEnemy(e);
+  drawBoss();
+  drawBullets();
+  drawParticles();
+  drawPlayer();
+}
+
+/* ============================================================
+   MAIN LOOP
+   ============================================================ */
+function gameLoop(ts) {
+  if (!Game.running || Game.paused) return;
+  updatePlayer();
+  updateEnemies();
+  updateBullets();
+  updateDrops();
+  updateParticles();
+  checkCollisions();
+  updateSpawning();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+/* ============================================================
+   PWA — REGISTRO DO SERVICE WORKER + PROMPT DE INSTALAR
+   ============================================================
+   O navegador só dispara "beforeinstallprompt" se: o site estiver
+   em HTTPS (GitHub Pages já serve assim), o manifest.json + sw.js
+   estiverem OK, e o jogador ainda não tiver instalado o app.
+   Isso não funciona em file:// nem em teste local sem servidor.
+   ============================================================ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {
+      // silencioso: se falhar (ex: rodando em file://), o jogo
+      // continua funcionando normalmente, só sem modo offline/instalar
+    });
+  });
+}
+
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); // impede o mini-popup padrão do Chrome
+  deferredInstallPrompt = e;
+  // só mostra o banner se o jogador ainda não recusou antes nesta sessão de dados
+  if (!DB.get('installBannerDismissed', false)) {
+    document.getElementById('installBanner').classList.add('show');
+  }
+});
+
+document.getElementById('installBannerYes').addEventListener('click', async () => {
+  document.getElementById('installBanner').classList.remove('show');
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+});
+
+document.getElementById('installBannerNo').addEventListener('click', () => {
+  document.getElementById('installBanner').classList.remove('show');
+  DB.set('installBannerDismissed', true);
+});
+
+// se o app já foi instalado, esconde qualquer banner residual
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+  deferredInstallPrompt = null;
+});
+
+</script>
+</body>
+</html>
