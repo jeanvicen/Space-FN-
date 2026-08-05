@@ -56,7 +56,7 @@ const ADMIN_CONFIG = {
      ---------------------------------------------------------- */
   mensagemGlobal: {
     ativa: true,
-    id: 1,
+    id: 2,
     titulo: "BEM-VINDO AO EARLY ACCESS",
     texto: "O jogo está em desenvolvimento ativo. Use o código BEMVINDO e aproveite!"
   },
