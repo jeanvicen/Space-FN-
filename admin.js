@@ -84,7 +84,7 @@ window.ADMIN_CONFIG = {
   devMessage: {
     author: 'Klipza Studio (Dev)',
     badge: 'Anúncio Oficial',
-    text: 'Bem-vindo ao SpaceFN! Novos eventos e códigos chegando em breve. Bom jogo, piloto! 🚀'
+    text: 'Bem-vindo ao SpaceFN! Novos eventos e códigos chegando em breve. Bom jogo, aproveita o novo código KLIPZA2026🚀'
   }
 
 };
